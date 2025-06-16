@@ -358,14 +358,38 @@ class SubmissionService {
         timeLimit: 1000, // Default 1 second
         cpuLimit: 100, // Default 100%
         memoryLimit: 128 // Default 128MB
+      }, {
+        timeout: 25000 // 25 seconds timeout for evaluation service
       });
 
+      // Wait for evaluation service to process
+      let attempts = 0;
+      const maxAttempts = 10;
+      const waitTime = 1000; // 1 second
+
+      while (attempts < maxAttempts) {
+        if (response.data && (response.data.output !== undefined || response.data.error !== undefined)) {
+          return {
+            output: response.data.output || "",
+            error: response.data.error || "",
+          };
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        attempts++;
+      }
+
       return {
-        output: response.data.output || "",
-        error: response.data.error || "",
+        error: "Build timed out. Please try again."
       };
     } catch (err: any) {
-      return { error: err.message || "Failed to run code" };
+      console.error('Build code error:', err);
+      if (err.code === 'ECONNABORTED') {
+        return { error: "Build request timed out. Please try again." };
+      }
+      return { 
+        error: err.response?.data?.message || err.message || "Failed to run code" 
+      };
     }
   }
 

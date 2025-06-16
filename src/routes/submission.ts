@@ -14,9 +14,24 @@ router.post("/build", async (req, res, next) => {
       return res.status(400).json({ error: "language, sourceCode, and input are required" });
     }
 
-    const result = await submissionService.buildCode(language, sourceCode, input);
+    console.log('Building code request:', { language, sourceCode, input });
+    
+    // Set a timeout for the entire build process
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Build request timed out')), 30000);
+    });
+
+    const buildPromise = submissionService.buildCode(language, sourceCode, input);
+    
+    const result = await Promise.race([buildPromise, timeoutPromise]);
+    console.log('Build result:', result);
+    
     res.status(200).json(result);
-  } catch (err) {
+  } catch (err: any) {
+    console.error('Build code error:', err);
+    if (err.message === 'Build request timed out') {
+      return res.status(408).json({ error: "Build request timed out. Please try again." });
+    }
     next(err);
   }
 });
