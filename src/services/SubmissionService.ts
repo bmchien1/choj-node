@@ -25,9 +25,22 @@ interface CodingAnswer {
   callbackUrl: string;
 }
 
+interface TestCaseResult {
+  testCase: number;
+  verdict: string;
+  passed: boolean;
+  input: string;
+  expectedOutput: string;
+  actualOutput: string;
+  error: string;
+  executionTime: string;
+}
+
 interface EvaluationResult {
-  results: any[];
+  success: boolean;
   score: number;
+  totalTests: number;
+  results: TestCaseResult[];
   error?: string;
 }
 
@@ -281,8 +294,9 @@ class SubmissionService {
     const existingResults = JSON.parse(submission.results || '[]');
     
     // Calculate question score based on passed test cases
-    const totalTests = result.results.length;
-    const questionScore = Math.round((result.score / totalTests) * 10); // Assuming max point is 10
+    const totalTests = result.totalTests;
+    const passedTests = result.results.filter(r => r.passed).length;
+    const questionScore = Math.round((passedTests / totalTests) * 10); // Assuming max point is 10
 
     // Add coding results
     const updatedResults = [
@@ -290,7 +304,7 @@ class SubmissionService {
       {
         questionId: questionId,
         results: result.results,
-        passed: result.score === totalTests,
+        passed: result.success,
         score: questionScore,
         maxPoints: 10,
         error: result.error
