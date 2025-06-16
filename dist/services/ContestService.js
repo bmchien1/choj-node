@@ -6,12 +6,14 @@ const User_1 = require("../entities/User");
 const Question_1 = require("../entities/Question");
 const uuid_1 = require("uuid");
 const Matrix_1 = require("../entities/Matrix");
+const ContestAttempt_1 = require("../entities/ContestAttempt");
 class ContestService {
     constructor() {
         this.contestRepository = data_source_1.AppDataSource.getRepository(Contest_1.Contest);
         this.userRepository = data_source_1.AppDataSource.getRepository(User_1.User);
         this.questionRepository = data_source_1.AppDataSource.getRepository(Question_1.Question);
         this.matrixRepository = data_source_1.AppDataSource.getRepository(Matrix_1.Matrix);
+        this.attemptRepository = data_source_1.AppDataSource.getRepository(ContestAttempt_1.ContestAttempt);
     }
     static getInstance() {
         if (!ContestService.instance) {
@@ -179,6 +181,31 @@ class ContestService {
             }
         }
         return this.contestRepository.save(contest);
+    }
+    async submitAttempt(id) {
+        const attempt = await this.attemptRepository.findOne({
+            where: { id },
+            relations: ["contest", "user"]
+        });
+        if (!attempt) {
+            throw new Error("Attempt not found");
+        }
+        console.log('Processing submission for attempt:', {
+            attemptId: attempt.id,
+            contestId: attempt.contest.id,
+            userId: attempt.user.id,
+            startTime: attempt.startTime,
+            endTime: new Date(),
+            timeLeft: attempt.timeLeft
+        });
+        attempt.endTime = new Date();
+        attempt.isSubmitted = true;
+        const savedAttempt = await this.attemptRepository.save(attempt);
+        console.log('Attempt submitted successfully:', {
+            attemptId: savedAttempt.id,
+            submissionTime: savedAttempt.endTime
+        });
+        return savedAttempt;
     }
 }
 exports.default = ContestService;

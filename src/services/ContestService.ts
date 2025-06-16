@@ -4,6 +4,7 @@ import { User } from "../entities/User";
 import { Question } from "../entities/Question";
 import { v4 as uuidv4 } from "uuid";
 import { Matrix } from "../entities/Matrix";
+import { ContestAttempt } from "../entities/ContestAttempt";
 
 export default class ContestService {
     private static instance: ContestService;
@@ -11,6 +12,7 @@ export default class ContestService {
     private userRepository = AppDataSource.getRepository(User);
     private questionRepository = AppDataSource.getRepository(Question);
     private matrixRepository = AppDataSource.getRepository(Matrix);
+    private attemptRepository = AppDataSource.getRepository(ContestAttempt);
 
     private constructor() {}
 
@@ -235,5 +237,36 @@ export default class ContestService {
             }
         }
         return this.contestRepository.save(contest);
+    }
+
+    async submitAttempt(id: number): Promise<ContestAttempt> {
+        const attempt = await this.attemptRepository.findOne({
+            where: { id },
+            relations: ["contest", "user"]
+        });
+
+        if (!attempt) {
+            throw new Error("Attempt not found");
+        }
+
+        console.log('Processing submission for attempt:', {
+            attemptId: attempt.id,
+            contestId: attempt.contest.id,
+            userId: attempt.user.id,
+            startTime: attempt.startTime,
+            endTime: new Date(),
+            timeLeft: attempt.timeLeft
+        });
+
+        attempt.endTime = new Date();
+        attempt.isSubmitted = true;
+
+        const savedAttempt = await this.attemptRepository.save(attempt);
+        console.log('Attempt submitted successfully:', {
+            attemptId: savedAttempt.id,
+            submissionTime: savedAttempt.endTime
+        });
+
+        return savedAttempt;
     }
 } 

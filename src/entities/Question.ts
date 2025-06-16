@@ -49,9 +49,6 @@ export class Question extends BaseEntity {
   testCases?: { input: string; output: string }[];
 
   @Column({ nullable: true })
-  language?: string;
-
-  @Column({ nullable: true })
   correctAnswer?: string;
 
   @Column("json", { nullable: true })

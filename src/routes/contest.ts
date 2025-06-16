@@ -1,10 +1,12 @@
 import { Router } from "express";
 import ContestService from "../services/ContestService";
+import { ContestAttemptService } from "../services/ContestAttemptService";
 import isAuthenticated from "../middleware/isAuthenticated";
 import { AppRole } from "../types";
 
 const router = Router();
 const contestService = ContestService.getInstance();
+const attemptService = ContestAttemptService.getInstance();
 
 // Create a new contest (Teacher only)
 router.post("/", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
@@ -48,6 +50,19 @@ router.get("/access/:url", async (req, res, next) => {
         res.json(contest);
     } catch (error) {
         next(error);
+    }
+});
+
+// Get attempts by user and contest
+router.get("/:contestId/attempts", isAuthenticated(), async (req, res, next) => {
+    try {
+        const attempts = await attemptService.getAttemptsByUserAndContest(
+            parseInt(req.query.userId as string),
+            parseInt(req.params.contestId)
+        );
+        res.json(attempts);
+    } catch (err) {
+        next(err);
     }
 });
 
@@ -157,6 +172,79 @@ router.post("/:contestId/add-questions-by-matrix", isAuthenticated([AppRole.TEAC
     } catch (error) {
         next(error);
     }
+});
+
+// New routes for contest attempts
+router.post("/:contestId/start", isAuthenticated(), async (req, res, next) => {
+  try {
+    const contest = await contestService.getContestById(parseInt(req.params.contestId));
+    if (!contest) {
+      return res.status(404).json({ error: "Contest not found" });
+    }
+    const attempt = await attemptService.startAttempt(parseInt(req.body.userId), contest);
+    res.status(201).json(attempt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/attempt/:attemptId/active", isAuthenticated(), async (req, res, next) => {
+  try {
+    const attempt = await attemptService.updateLastActiveTime(parseInt(req.params.attemptId));
+    res.json(attempt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/attempt/:attemptId/submit", isAuthenticated(), async (req, res, next) => {
+  try {
+    const attempt = await attemptService.submitAttempt(parseInt(req.params.attemptId));
+    res.json(attempt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:contestId/attempt", isAuthenticated(), async (req, res, next) => {
+  try {
+    const attempt = await attemptService.getActiveAttempt(
+      parseInt(req.query.userId as string),
+      parseInt(req.params.contestId)
+    );
+    res.json(attempt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/attempt/:attemptId/time", isAuthenticated(), async (req, res, next) => {
+  try {
+    const { timeLeft } = req.body;
+    const attempt = await attemptService.updateTimeLeft(parseInt(req.params.attemptId), timeLeft);
+    res.json(attempt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/attempt/:attemptId/answers", isAuthenticated(), async (req, res, next) => {
+  try {
+    const { answers } = req.body;
+    const attempt = await attemptService.saveTemporaryAnswers(parseInt(req.params.attemptId), answers);
+    res.json(attempt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/attempt/:attemptId/answers", isAuthenticated(), async (req, res, next) => {
+  try {
+    const answers = await attemptService.getTemporaryAnswers(parseInt(req.params.attemptId));
+    res.json(answers);
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router; 

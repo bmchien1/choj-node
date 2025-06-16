@@ -23,6 +23,8 @@ import { UserInCourse } from "./entities/UserInCourse";
 import { Tag } from "./entities/Tag";
 import { Chapter } from "./entities/Chapter";
 import { Contest } from "./entities/Contest";
+import { AssignmentAttempt } from "./entities/AssignmentAttempt";
+import { ContestAttempt } from "./entities/ContestAttempt";
 
 
 dotenv.config();
@@ -55,7 +57,9 @@ export const AppDataSource = new DataSource({
     UserInCourse,
     Tag,
     Chapter,
-    Contest
+    Contest,
+    AssignmentAttempt,
+    ContestAttempt,
   ],
   migrations: ["src/migrations/*.ts"],
   subscribers: [],

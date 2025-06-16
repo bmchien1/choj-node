@@ -24,7 +24,18 @@ router.get("/", (0, isAuthenticated_1.default)(), async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        const [courses, total] = await courseService.getAllCoursesPaginated(skip, limit);
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const classFilter = req.query.class;
+        const subjectFilter = req.query.subject;
+        const [courses, total] = await courseService.getAllCoursesPaginated(skip, limit, {
+            search,
+            sortField,
+            sortOrder,
+            class: classFilter,
+            subject: subjectFilter
+        });
         res.json({
             courses,
             pagination: {
@@ -50,8 +61,30 @@ router.get("/:id", (0, isAuthenticated_1.default)(), async (req, res, next) => {
 });
 router.get("/creator/:creatorId", (0, isAuthenticated_1.default)(), async (req, res, next) => {
     try {
-        const courses = await courseService.getCourseByCreator(parseInt(req.params.creatorId));
-        res.json(courses);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const classFilter = req.query.class;
+        const subjectFilter = req.query.subject;
+        const [courses, total] = await courseService.getCoursesByCreatorPaginated(parseInt(req.params.creatorId), skip, limit, {
+            search,
+            sortField,
+            sortOrder,
+            class: classFilter,
+            subject: subjectFilter
+        });
+        res.json({
+            courses,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     }
     catch (err) {
         next(err);

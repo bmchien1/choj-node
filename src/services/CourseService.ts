@@ -1,9 +1,8 @@
-import { Repository } from "typeorm";
+import { Repository, Like, FindOptionsWhere } from "typeorm";
 import { Course } from "../entities/Course";
 import { User } from "../entities/User";
 import { AppDataSource } from "../data-source";
-import { Lesson } from "../entities/Lesson";
-import { Assignment } from "../entities/Assignment";
+import { Chapter } from "../entities/Chapter";
 
 interface CourseData {
   name: string;
@@ -13,19 +12,25 @@ interface CourseData {
   creatorId: number;
 }
 
+interface CourseQueryOptions {
+  search?: string;
+  sortField?: string;
+  sortOrder?: 'ascend' | 'descend';
+  class?: string;
+  subject?: string;
+}
+
 class CourseService {
   private readonly courseRepository: Repository<Course>;
   private readonly userRepository: Repository<User>;
-  private readonly lessonRepository: Repository<Lesson>;
-  private readonly assignmentRepository: Repository<Assignment>;
+  private readonly chapterRepository: Repository<Chapter>;
 
   private static instance: CourseService;
 
   constructor() {
     this.courseRepository = AppDataSource.getRepository(Course);
     this.userRepository = AppDataSource.getRepository(User);
-    this.lessonRepository = AppDataSource.getRepository(Lesson);
-    this.assignmentRepository = AppDataSource.getRepository(Assignment);
+    this.chapterRepository = AppDataSource.getRepository(Chapter);
   }
 
   public static getInstance(): CourseService {
@@ -57,8 +62,64 @@ class CourseService {
     return await this.courseRepository.save(course);
   }
 
-  async getAllCoursesPaginated(skip: number, take: number): Promise<[Course[], number]> {
+  async getAllCoursesPaginated(skip: number, take: number, options?: CourseQueryOptions): Promise<[Course[], number]> {
+    const where: FindOptionsWhere<Course> = {};
+
+    if (options?.search) {
+      where.name = Like(`%${options.search}%`);
+    }
+
+    if (options?.class) {
+      where.class = options.class;
+    }
+
+    if (options?.subject) {
+      where.subject = options.subject;
+    }
+
+    const order: any = {};
+    if (options?.sortField) {
+      order[options.sortField] = options.sortOrder === 'descend' ? 'DESC' : 'ASC';
+    } else {
+      order.createdAt = 'DESC';
+    }
+
     return await this.courseRepository.findAndCount({
+      where,
+      order,
+      skip,
+      take,
+      relations: ["creator"]
+    });
+  }
+
+  async getCoursesByCreatorPaginated(creatorId: number, skip: number, take: number, options?: CourseQueryOptions): Promise<[Course[], number]> {
+    const where: FindOptionsWhere<Course> = {
+      creator: { id: creatorId }
+    };
+
+    if (options?.search) {
+      where.name = Like(`%${options.search}%`);
+    }
+
+    if (options?.class) {
+      where.class = options.class;
+    }
+
+    if (options?.subject) {
+      where.subject = options.subject;
+    }
+
+    const order: any = {};
+    if (options?.sortField) {
+      order[options.sortField] = options.sortOrder === 'descend' ? 'DESC' : 'ASC';
+    } else {
+      order.createdAt = 'DESC';
+    }
+
+    return await this.courseRepository.findAndCount({
+      where,
+      order,
       skip,
       take,
       relations: ["creator"]
@@ -76,7 +137,7 @@ class CourseService {
 
     const course = await this.courseRepository.findOne({ 
       where: { id }, 
-      relations: ["creator", "lessons", "assignments"] 
+      relations: ["creator", "chapters", "chapters.lessons", "chapters.assignments"] 
     });
     if (!course) {
       throw new Error("Course not found");
@@ -131,20 +192,27 @@ class CourseService {
       throw new Error("Course ID is required");
     }
   
-    const lessons = await this.lessonRepository.find({
+    const chapters = await this.chapterRepository.find({
       where: { course: { id: courseId } },
-      select: ["id", "title", "order"],
+      relations: ["lessons", "assignments"],
     });
   
-    const assignments = await this.assignmentRepository.find({
-      where: { course: { id: courseId } },
-      select: ["id", "title", "order"],
-    });
-  
-    const content = [
-      ...lessons.map((lesson) => ({ type: "lesson", id: lesson.id, title: lesson.title, order: lesson.order })),
-      ...assignments.map((assignment) => ({ type: "assignment", id: assignment.id, title: assignment.title, order: assignment.order })),
-    ];
+    const content = chapters.flatMap(chapter => [
+      ...chapter.lessons.map(lesson => ({ 
+        type: "lesson", 
+        id: lesson.id, 
+        title: lesson.title, 
+        order: lesson.order,
+        chapterId: chapter.id 
+      })),
+      ...chapter.assignments.map(assignment => ({ 
+        type: "assignment", 
+        id: assignment.id, 
+        title: assignment.title, 
+        order: assignment.order,
+        chapterId: chapter.id 
+      }))
+    ]);
   
     return content.sort((a, b) => a.order - b.order);
   }

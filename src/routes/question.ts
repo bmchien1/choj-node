@@ -22,8 +22,23 @@ router.get("/", isAuthenticated(), async (req, res, next) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search as string;
+    const sortField = req.query.sortField as string;
+    const sortOrder = req.query.sortOrder as 'ascend' | 'descend';
+    const difficulty = req.query.difficulty as string;
+    const type = req.query.type as string;
+    const tags = req.query.tags ? (req.query.tags as string).split(',').map(Number) : undefined;
 
-    const [questions, total] = await questionService.getAllQuestionsPaginated(skip, limit);
+    const [questions, total] = await questionService.getAllQuestionsPaginated(
+      skip,
+      limit,
+      search,
+      sortField,
+      sortOrder,
+      difficulty,
+      type,
+      tags
+    );
     res.json({
       questions: questions.map((question) => ({
         id: question.id,
@@ -58,8 +73,24 @@ router.get("/:creatorId", isAuthenticated(), async (req, res, next) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search as string;
+    const sortField = req.query.sortField as string;
+    const sortOrder = req.query.sortOrder as 'ascend' | 'descend';
+    const difficulty = req.query.difficulty as string;
+    const type = req.query.type as string;
+    const tags = req.query.tags ? (req.query.tags as string).split(',').map(Number) : undefined;
 
-    const [questions, total] = await questionService.getQuestionsByCreatorPaginated(creatorId, skip, limit);
+    const [questions, total] = await questionService.getQuestionsByCreatorPaginated(
+      creatorId,
+      skip,
+      limit,
+      search,
+      sortField,
+      sortOrder,
+      difficulty,
+      type,
+      tags
+    );
     res.json({
       questions: questions.map((question) => ({
         id: question.id,

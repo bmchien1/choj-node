@@ -13,8 +13,6 @@ exports.Course = void 0;
 const typeorm_1 = require("typeorm");
 const BaseEntity_1 = require("./BaseEntity");
 const User_1 = require("./User");
-const Assignment_1 = require("./Assignment");
-const Lesson_1 = require("./Lesson");
 const Chapter_1 = require("./Chapter");
 let Course = class Course extends BaseEntity_1.BaseEntity {
 };
@@ -43,14 +41,6 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => Chapter_1.Chapter, (chapter) => chapter.course),
     __metadata("design:type", Array)
 ], Course.prototype, "chapters", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => Assignment_1.Assignment, (assignment) => assignment.course),
-    __metadata("design:type", Array)
-], Course.prototype, "assignments", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => Lesson_1.Lesson, (lesson) => lesson.course),
-    __metadata("design:type", Array)
-], Course.prototype, "lessons", void 0);
 exports.Course = Course = __decorate([
     (0, typeorm_1.Entity)()
 ], Course);

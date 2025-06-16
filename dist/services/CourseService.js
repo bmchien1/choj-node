@@ -1,17 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseService = void 0;
+const typeorm_1 = require("typeorm");
 const Course_1 = require("../entities/Course");
 const User_1 = require("../entities/User");
 const data_source_1 = require("../data-source");
-const Lesson_1 = require("../entities/Lesson");
-const Assignment_1 = require("../entities/Assignment");
+const Chapter_1 = require("../entities/Chapter");
 class CourseService {
     constructor() {
         this.courseRepository = data_source_1.AppDataSource.getRepository(Course_1.Course);
         this.userRepository = data_source_1.AppDataSource.getRepository(User_1.User);
-        this.lessonRepository = data_source_1.AppDataSource.getRepository(Lesson_1.Lesson);
-        this.assignmentRepository = data_source_1.AppDataSource.getRepository(Assignment_1.Assignment);
+        this.chapterRepository = data_source_1.AppDataSource.getRepository(Chapter_1.Chapter);
     }
     static getInstance() {
         if (!CourseService.instance) {
@@ -37,8 +36,55 @@ class CourseService {
         });
         return await this.courseRepository.save(course);
     }
-    async getAllCoursesPaginated(skip, take) {
+    async getAllCoursesPaginated(skip, take, options) {
+        const where = {};
+        if (options?.search) {
+            where.name = (0, typeorm_1.Like)(`%${options.search}%`);
+        }
+        if (options?.class) {
+            where.class = options.class;
+        }
+        if (options?.subject) {
+            where.subject = options.subject;
+        }
+        const order = {};
+        if (options?.sortField) {
+            order[options.sortField] = options.sortOrder === 'descend' ? 'DESC' : 'ASC';
+        }
+        else {
+            order.createdAt = 'DESC';
+        }
         return await this.courseRepository.findAndCount({
+            where,
+            order,
+            skip,
+            take,
+            relations: ["creator"]
+        });
+    }
+    async getCoursesByCreatorPaginated(creatorId, skip, take, options) {
+        const where = {
+            creator: { id: creatorId }
+        };
+        if (options?.search) {
+            where.name = (0, typeorm_1.Like)(`%${options.search}%`);
+        }
+        if (options?.class) {
+            where.class = options.class;
+        }
+        if (options?.subject) {
+            where.subject = options.subject;
+        }
+        const order = {};
+        if (options?.sortField) {
+            order[options.sortField] = options.sortOrder === 'descend' ? 'DESC' : 'ASC';
+        }
+        else {
+            order.createdAt = 'DESC';
+        }
+        return await this.courseRepository.findAndCount({
+            where,
+            order,
             skip,
             take,
             relations: ["creator"]
@@ -53,7 +99,7 @@ class CourseService {
         }
         const course = await this.courseRepository.findOne({
             where: { id },
-            relations: ["creator", "lessons", "assignments"]
+            relations: ["creator", "chapters", "chapters.lessons", "chapters.assignments"]
         });
         if (!course) {
             throw new Error("Course not found");
@@ -96,18 +142,26 @@ class CourseService {
         if (!courseId) {
             throw new Error("Course ID is required");
         }
-        const lessons = await this.lessonRepository.find({
+        const chapters = await this.chapterRepository.find({
             where: { course: { id: courseId } },
-            select: ["id", "title", "order"],
+            relations: ["lessons", "assignments"],
         });
-        const assignments = await this.assignmentRepository.find({
-            where: { course: { id: courseId } },
-            select: ["id", "title", "order"],
-        });
-        const content = [
-            ...lessons.map((lesson) => ({ type: "lesson", id: lesson.id, title: lesson.title, order: lesson.order })),
-            ...assignments.map((assignment) => ({ type: "assignment", id: assignment.id, title: assignment.title, order: assignment.order })),
-        ];
+        const content = chapters.flatMap(chapter => [
+            ...chapter.lessons.map(lesson => ({
+                type: "lesson",
+                id: lesson.id,
+                title: lesson.title,
+                order: lesson.order,
+                chapterId: chapter.id
+            })),
+            ...chapter.assignments.map(assignment => ({
+                type: "assignment",
+                id: assignment.id,
+                title: assignment.title,
+                order: assignment.order,
+                chapterId: chapter.id
+            }))
+        ]);
         return content.sort((a, b) => a.order - b.order);
     }
 }

@@ -57,6 +57,23 @@ router.get("/assignment/:assignmentId", async (req, res, next) => {
   }
 });
 
+// Get submissions by assignment ID and user ID
+router.get("/assignment/:assignmentId/user/:userId", async (req, res, next) => {
+  try {
+    const assignmentId = parseInt(req.params.assignmentId);
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(assignmentId) || isNaN(userId)) {
+      return res.status(400).json({ error: "Invalid assignmentId or userId" });
+    }
+
+    const submissions = await submissionService.getSubmissionsByAssignmentAndUser(assignmentId, userId);
+    res.json(submissions);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Get submission by ID
 router.get("/:submissionId", async (req, res, next) => {
   try {

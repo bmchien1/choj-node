@@ -14,7 +14,7 @@ const app = (0, express_1.default)();
 // Middleware
 app.use(express_1.default.json()); // Parse JSON bodies
 app.use((0, cors_1.default)({
-    origin: "http://localhost:3000", // Allow your frontend origin
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000", // Allow your frontend origin
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed methods
     allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
     credentials: true, // Support cookies/auth headers if needed

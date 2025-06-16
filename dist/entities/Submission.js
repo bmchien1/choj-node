@@ -55,6 +55,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: "json", nullable: true }),
     __metadata("design:type", Object)
 ], Submission.prototype, "results", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: "enum", enum: ["pending", "evaluating", "completed", "failed"], default: "pending" }),
+    __metadata("design:type", String)
+], Submission.prototype, "status", void 0);
 exports.Submission = Submission = __decorate([
     (0, typeorm_1.Entity)()
 ], Submission);

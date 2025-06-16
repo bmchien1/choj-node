@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TagService = void 0;
 const Tag_1 = require("../entities/Tag");
 const data_source_1 = require("../data-source");
 const User_1 = require("../entities/User");
@@ -18,74 +17,75 @@ class TagService {
         return TagService.instance;
     }
     async createTag(body) {
-        if (!body.name || !body.creatorId) {
-            throw new Error('Name and creatorId are required');
-        }
-        const creator = await this.userRepository.findOne({ where: { id: body.creatorId } });
+        const creator = await this.userRepository.findOne({
+            where: { id: body.creatorId },
+        });
         if (!creator) {
-            throw new Error(`User with ID ${body.creatorId} not found`);
+            throw new Error("Creator not found");
         }
         const tag = this.tagRepository.create({
             name: body.name,
+            description: body.description,
             creator,
         });
-        return await this.tagRepository.save(tag);
+        return this.tagRepository.save(tag);
     }
-    async getAllTags() {
-        const tags = await this.tagRepository.find({
-            select: ['id', 'name'],
-            relations: ['creator'],
-            relationLoadStrategy: 'query',
-        });
-        return tags.map((tag) => ({
-            id: tag.id,
-            name: tag.name,
-            creatorId: tag.creator?.id ?? 0,
-            creatorName: tag.creator?.email ?? 'Unknown',
-        }));
-    }
-    async getTagsByCreator(creatorId) {
-        if (!creatorId) {
-            throw new Error('Creator ID is required');
+    async getAllTagsPaginated(skip, take, options) {
+        const queryBuilder = this.tagRepository.createQueryBuilder("tag")
+            .leftJoinAndSelect("tag.creator", "creator");
+        if (options?.search) {
+            queryBuilder.where("(tag.name ILIKE :search OR tag.description ILIKE :search)", { search: `%${options.search}%` });
         }
-        const tags = await this.tagRepository.find({
-            where: { creator: { id: creatorId } },
-            select: ['id', 'name'],
-            relations: ['creator'],
-            relationLoadStrategy: 'query',
-        });
-        return tags.map((tag) => ({
-            id: tag.id,
-            name: tag.name,
-            creatorId: tag.creator?.id ?? 0,
-            creatorName: tag.creator?.email ?? 'Unknown',
-        }));
+        if (options?.sortField) {
+            const order = options.sortOrder === 'descend' ? 'DESC' : 'ASC';
+            queryBuilder.orderBy(`tag.${options.sortField}`, order);
+        }
+        else {
+            queryBuilder.orderBy("tag.name", "ASC");
+        }
+        return queryBuilder
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
+    }
+    async getTagsByCreatorPaginated(creatorId, skip, take, options) {
+        const queryBuilder = this.tagRepository.createQueryBuilder("tag")
+            .leftJoinAndSelect("tag.creator", "creator")
+            .where("creator.id = :creatorId", { creatorId });
+        if (options?.search) {
+            queryBuilder.andWhere("(tag.name ILIKE :search OR tag.description ILIKE :search)", { search: `%${options.search}%` });
+        }
+        if (options?.sortField) {
+            const order = options.sortOrder === 'descend' ? 'DESC' : 'ASC';
+            queryBuilder.orderBy(`tag.${options.sortField}`, order);
+        }
+        else {
+            queryBuilder.orderBy("tag.name", "ASC");
+        }
+        return queryBuilder
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
     }
     async getTagById(id) {
-        if (!id) {
-            throw new Error('Tag ID is required');
-        }
         const tag = await this.tagRepository.findOne({
             where: { id },
-            relations: ['creator'],
+            relations: ["creator"],
         });
         if (!tag) {
-            throw new Error(`Tag with ID ${id} not found`);
+            throw new Error("Tag not found");
         }
         return tag;
     }
     async updateTag(id, body) {
-        if (!id) {
-            throw new Error('Tag ID is required');
-        }
         const tag = await this.getTagById(id);
-        tag.name = body.name ?? tag.name;
-        return await this.tagRepository.save(tag);
+        if (body.name)
+            tag.name = body.name;
+        if (body.description)
+            tag.description = body.description;
+        return this.tagRepository.save(tag);
     }
     async deleteTag(id) {
-        if (!id) {
-            throw new Error('Tag ID is required');
-        }
         const tag = await this.getTagById(id);
         await this.tagRepository.remove(tag);
         return { message: "Tag deleted successfully" };
@@ -106,4 +106,4 @@ class TagService {
         return await this.questionRepository.save(question);
     }
 }
-exports.TagService = TagService;
+exports.default = TagService;

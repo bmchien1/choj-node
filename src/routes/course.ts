@@ -21,8 +21,23 @@ router.get("/", isAuthenticated(), async (req, res, next) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search as string;
+    const sortField = req.query.sortField as string;
+    const sortOrder = req.query.sortOrder as 'ascend' | 'descend';
+    const classFilter = req.query.class as string;
+    const subjectFilter = req.query.subject as string;
 
-    const [courses, total] = await courseService.getAllCoursesPaginated(skip, limit);
+    const [courses, total] = await courseService.getAllCoursesPaginated(
+      skip,
+      limit,
+      {
+        search,
+        sortField,
+        sortOrder,
+        class: classFilter,
+        subject: subjectFilter
+      }
+    );
     res.json({
       courses,
       pagination: {
@@ -48,8 +63,36 @@ router.get("/:id", isAuthenticated(), async (req, res, next) => {
 
 router.get("/creator/:creatorId", isAuthenticated(), async (req, res, next) => {
   try {
-    const courses = await courseService.getCourseByCreator(parseInt(req.params.creatorId));
-    res.json(courses);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search as string;
+    const sortField = req.query.sortField as string;
+    const sortOrder = req.query.sortOrder as 'ascend' | 'descend';
+    const classFilter = req.query.class as string;
+    const subjectFilter = req.query.subject as string;
+
+    const [courses, total] = await courseService.getCoursesByCreatorPaginated(
+      parseInt(req.params.creatorId),
+      skip,
+      limit,
+      {
+        search,
+        sortField,
+        sortOrder,
+        class: classFilter,
+        subject: subjectFilter
+      }
+    );
+    res.json({
+      courses,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     next(err);
   }

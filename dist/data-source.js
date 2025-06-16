@@ -60,6 +60,8 @@ const UserInCourse_1 = require("./entities/UserInCourse");
 const Tag_1 = require("./entities/Tag");
 const Chapter_1 = require("./entities/Chapter");
 const Contest_1 = require("./entities/Contest");
+const AssignmentAttempt_1 = require("./entities/AssignmentAttempt");
+const ContestAttempt_1 = require("./entities/ContestAttempt");
 dotenv.config();
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "postgres",
@@ -89,7 +91,9 @@ exports.AppDataSource = new typeorm_1.DataSource({
         UserInCourse_1.UserInCourse,
         Tag_1.Tag,
         Chapter_1.Chapter,
-        Contest_1.Contest
+        Contest_1.Contest,
+        AssignmentAttempt_1.AssignmentAttempt,
+        ContestAttempt_1.ContestAttempt,
     ],
     migrations: ["src/migrations/*.ts"],
     subscribers: [],

@@ -35,4 +35,7 @@ export class Submission extends BaseEntity {
 
   @Column({ type: "json", nullable: true })
   results?: any;
+
+  @Column({ type: "enum", enum: ["pending", "evaluating", "completed", "failed"], default: "pending" })
+  status!: string;
 }

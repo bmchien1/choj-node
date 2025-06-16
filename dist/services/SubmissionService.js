@@ -11,15 +11,13 @@ const User_1 = require("../entities/User");
 const Assignment_1 = require("../entities/Assignment");
 const Contest_1 = require("../entities/Contest");
 const Course_1 = require("../entities/Course");
+const axios_1 = __importDefault(require("axios"));
 class SubmissionService {
     constructor() {
         this.languageMap = {
-            javascript: "javascript",
             python: "python",
             java: "java",
-            c: "c",
             cpp: "cpp",
-            c_cpp: "cpp",
         };
         this.submissionRepository = data_source_1.AppDataSource.getRepository(Submission_1.Submission);
         this.questionRepository = data_source_1.AppDataSource.getRepository(Question_1.Question);
@@ -28,6 +26,7 @@ class SubmissionService {
         this.contestRepository = data_source_1.AppDataSource.getRepository(Contest_1.Contest);
         this.courseRepository = data_source_1.AppDataSource.getRepository(Course_1.Course);
         this.compilerService = CompilerService_1.default.getInstance();
+        this.evaluationServiceUrl = process.env.EVALUATION_SERVICE_URL || "http://localhost:3001";
     }
     static getInstance() {
         if (!SubmissionService.instance) {
@@ -36,15 +35,22 @@ class SubmissionService {
         return SubmissionService.instance;
     }
     async submitAssignment(userId, assignmentId, testId, answers) {
+        console.log('=== Starting Submission Process ===');
+        console.log('Input parameters:', { userId, assignmentId, testId, answers });
         if (!userId || (!assignmentId && !testId)) {
+            console.error('Validation failed: Missing required parameters');
             throw new Error("User ID and either assignment ID or test ID are required");
         }
         if (assignmentId && testId) {
+            console.error('Validation failed: Cannot have both assignmentId and testId');
             throw new Error("Submission cannot be linked to both an assignment and a test");
         }
         const user = await this.userRepository.findOne({ where: { id: userId } });
-        if (!user)
+        if (!user) {
+            console.error('User not found:', userId);
             throw new Error("User not found");
+        }
+        console.log('Found user:', { id: user.id, email: user.email });
         let assignment = null;
         let contest = null;
         let course = null;
@@ -53,19 +59,30 @@ class SubmissionService {
                 where: { id: assignmentId },
                 relations: ["questions", "course"],
             });
-            if (!assignment)
+            if (!assignment) {
+                console.error('Assignment not found:', assignmentId);
                 throw new Error(`Assignment ${assignmentId} not found`);
+            }
             course = assignment.course;
+            console.log('Found assignment:', {
+                id: assignment.id,
+                title: assignment.title,
+                courseId: course?.id
+            });
         }
         else if (testId) {
             contest = await this.contestRepository.findOne({
                 where: { id: testId },
                 relations: ["questions"],
             });
-            if (!contest)
+            if (!contest) {
+                console.error('Contest not found:', testId);
                 throw new Error(`Contest ${testId} not found`);
+            }
+            console.log('Found contest:', { id: contest.id, title: contest.title });
         }
-        // Create submission even if there are no answers
+        // Create submission with pending status
+        console.log('Creating submission record...');
         const submission = this.submissionRepository.create({
             user,
             assignment: assignment ?? undefined,
@@ -74,99 +91,161 @@ class SubmissionService {
             answers: answers.length > 0 ? JSON.stringify(answers) : JSON.stringify([]),
             score: 0,
             submitted_at: new Date(),
+            status: "pending"
         });
         const savedSubmission = await this.submissionRepository.save(submission);
+        console.log('Saved submission:', {
+            id: savedSubmission.id,
+            status: savedSubmission.status,
+            submitted_at: savedSubmission.submitted_at
+        });
         // If no answers provided, return submission with 0 score
         if (!answers.length) {
+            console.log('No answers provided, returning submission with 0 score');
             return savedSubmission;
         }
-        let totalScore = 0;
-        const evaluationResults = [];
-        // Load question_scores from assignment or use test's questions_scores
-        const questionScores = assignment
-            ? assignment.questions_scores || {}
-            : contest?.questions_scores || {};
-        for (const answer of answers) {
-            if (!answer.sourceCode?.trim()) {
-                evaluationResults.push({
-                    questionId: answer.questionId,
-                    passed: false,
-                    score: 0,
-                    error: "No answer provided",
-                });
-                continue;
-            }
-            const question = await this.questionRepository.findOne({ where: { id: answer.questionId } });
-            if (!question) {
-                evaluationResults.push({
-                    questionId: answer.questionId,
-                    passed: false,
-                    score: 0,
-                    error: "Question not found",
-                });
-                continue;
-            }
-            if (question.questionType === "true-false")
-                continue;
-            const mappedLanguage = this.languageMap[answer.language?.toLowerCase() || question.language?.toLowerCase() || "javascript"] || "javascript";
-            const maxPoints = questionScores[question.id] || question.maxPoint || 10;
-            if (question.questionType === "coding") {
-                const testCases = question.testCases || [];
-                if (!testCases.length) {
+        try {
+            // Process non-coding questions first
+            const evaluationResults = [];
+            let totalScore = 0;
+            const codingAnswers = [];
+            // Load question_scores from assignment or use test's questions_scores
+            const questionScores = assignment
+                ? assignment.questions_scores || {}
+                : contest?.questions_scores || {};
+            for (const answer of answers) {
+                const question = await this.questionRepository.findOne({ where: { id: answer.questionId } });
+                if (!question) {
                     evaluationResults.push({
                         questionId: answer.questionId,
                         passed: false,
                         score: 0,
-                        error: "No test cases defined",
+                        error: "Question not found",
                     });
                     continue;
                 }
-                try {
-                    const results = await this.compilerService.runCode(mappedLanguage, answer.sourceCode, testCases);
-                    const passedTests = results.filter((r) => r.passed).length;
-                    const totalTests = testCases.length;
-                    const questionScore = Math.round((passedTests / totalTests) * maxPoints);
-                    const allPassed = passedTests === totalTests;
+                const maxPoints = questionScores[question.id] || question.maxPoint || 10;
+                if (question.questionType === "multiple-choice" || question.questionType === "short-answer") {
+                    // Process non-coding questions immediately
+                    const isCorrect = this.checkAnswer(question, answer.sourceCode);
+                    const questionScore = isCorrect ? maxPoints : 0;
                     totalScore += questionScore;
                     evaluationResults.push({
                         questionId: answer.questionId,
-                        results: results.map((r, idx) => ({
-                            testCase: idx + 1,
-                            passed: r.passed,
-                            output: r.output,
-                            expected: testCases[idx].output,
-                            error: r.error,
-                        })),
-                        passed: allPassed,
+                        passed: isCorrect,
                         score: questionScore,
                         maxPoints,
+                        output: answer.sourceCode,
+                        type: question.questionType
                     });
                 }
-                catch (err) {
-                    evaluationResults.push({
-                        questionId: answer.questionId,
-                        passed: false,
-                        score: 0,
-                        error: err.message || "Failed to evaluate code",
+                else if (question.questionType === "coding") {
+                    // Collect coding questions for evaluation service
+                    const testCases = question.testCases || [];
+                    if (!testCases.length) {
+                        evaluationResults.push({
+                            questionId: answer.questionId,
+                            passed: false,
+                            score: 0,
+                            error: "No test cases defined",
+                        });
+                        continue;
+                    }
+                    const callbackUrl = `${process.env.API_URL || "http://localhost:8080"}/api/submissions/${savedSubmission.id}/questions/${answer.questionId}/evaluation-result`;
+                    codingAnswers.push({
+                        sourceCode: answer.sourceCode,
+                        language: answer.language || "python",
+                        testCases,
+                        timeLimit: question.cpuTimeLimit || 1000,
+                        cpuLimit: 100,
+                        memoryLimit: question.memoryLimit || 128,
+                        callbackUrl
                     });
                 }
+            }
+            // Update submission with non-coding results
+            savedSubmission.results = JSON.stringify(evaluationResults);
+            savedSubmission.score = totalScore;
+            if (codingAnswers.length > 0) {
+                // Send coding answers to evaluation service
+                console.log('Sending coding answers to evaluation service...');
+                await this.sendToEvaluationService(codingAnswers);
+                // Update status to evaluating
+                savedSubmission.status = "evaluating";
             }
             else {
-                const isCorrect = this.checkAnswer(question, answer.sourceCode);
-                const questionScore = isCorrect ? maxPoints : 0;
-                totalScore += questionScore;
-                evaluationResults.push({
-                    questionId: answer.questionId,
-                    passed: isCorrect,
-                    score: questionScore,
-                    maxPoints,
-                    output: answer.sourceCode,
-                });
+                // All questions are done, mark as completed
+                savedSubmission.status = "completed";
             }
+            return await this.submissionRepository.save(savedSubmission);
         }
-        savedSubmission.score = totalScore;
-        savedSubmission.results = JSON.stringify(evaluationResults);
-        return await this.submissionRepository.save(savedSubmission);
+        catch (error) {
+            console.error('Error in evaluation process:', error);
+            savedSubmission.status = "failed";
+            savedSubmission.results = JSON.stringify([{ error: "Failed to process submission" }]);
+            return await this.submissionRepository.save(savedSubmission);
+        }
+    }
+    async sendToEvaluationService(codingAnswers) {
+        console.log('=== Sending to Evaluation Service ===');
+        console.log('Coding Answers:', codingAnswers);
+        try {
+            await axios_1.default.post(`${this.evaluationServiceUrl}/evaluate`, {
+                answers: codingAnswers
+            });
+            console.log('Successfully sent to evaluation service');
+        }
+        catch (error) {
+            console.error('Error sending to evaluation service:', error);
+            throw error;
+        }
+    }
+    async handleEvaluationResult(submissionId, questionId, result) {
+        console.log('=== Handling Evaluation Result ===');
+        console.log('Submission ID:', submissionId);
+        console.log('Question ID:', questionId);
+        console.log('Result:', result);
+        const submission = await this.submissionRepository.findOne({ where: { id: submissionId } });
+        if (!submission) {
+            console.error('Submission not found:', submissionId);
+            throw new Error(`Submission ${submissionId} not found`);
+        }
+        // Get existing results
+        const existingResults = JSON.parse(submission.results || '[]');
+        // Calculate question score based on passed test cases
+        const totalTests = result.results.length;
+        const questionScore = Math.round((result.score / totalTests) * 10); // Assuming max point is 10
+        // Add coding results
+        const updatedResults = [
+            ...existingResults,
+            {
+                questionId: questionId,
+                results: result.results,
+                passed: result.score === totalTests,
+                score: questionScore,
+                maxPoints: 10,
+                error: result.error
+            }
+        ];
+        // Update submission with new results
+        submission.score = submission.score + questionScore;
+        submission.results = JSON.stringify(updatedResults);
+        // Check if all coding questions have been evaluated
+        const answers = JSON.parse(submission.answers || '[]');
+        const codingQuestions = answers.filter((a) => {
+            const result = updatedResults.find(r => r.questionId === a.questionId);
+            return result !== undefined;
+        });
+        if (codingQuestions.length === answers.length) {
+            submission.status = "completed";
+        }
+        const updatedSubmission = await this.submissionRepository.save(submission);
+        console.log('Updated submission with evaluation result:', {
+            id: updatedSubmission.id,
+            status: updatedSubmission.status,
+            score: updatedSubmission.score
+        });
+        return updatedSubmission;
     }
     checkAnswer(question, answer) {
         switch (question.questionType) {
@@ -186,11 +265,20 @@ class SubmissionService {
             throw new Error("Source code cannot be a numeric value");
         }
         try {
-            const mappedLanguage = this.languageMap[language.toLowerCase()] || "javascript";
-            const result = await this.compilerService.runCode(mappedLanguage, sourceCode, [{ input, output: "" }]);
+            const mappedLanguage = this.languageMap[language.toLowerCase()] || "python";
+            // Send to evaluation service with build type
+            const response = await axios_1.default.post(`${this.evaluationServiceUrl}/build`, {
+                type: "build",
+                language: mappedLanguage,
+                sourceCode,
+                input,
+                timeLimit: 1000, // Default 1 second
+                cpuLimit: 100, // Default 100%
+                memoryLimit: 128 // Default 128MB
+            });
             return {
-                output: result[0]?.output || "",
-                error: result[0]?.error || "",
+                output: response.data.output || "",
+                error: response.data.error || "",
             };
         }
         catch (err) {
@@ -203,6 +291,19 @@ class SubmissionService {
         return this.submissionRepository.find({
             where: { assignment: { id: assignmentId } },
             relations: ["user", "assignment"],
+        });
+    }
+    async getSubmissionsByAssignmentAndUser(assignmentId, userId) {
+        if (!assignmentId || !userId) {
+            throw new Error("Assignment ID and User ID are required");
+        }
+        return this.submissionRepository.find({
+            where: {
+                assignment: { id: assignmentId },
+                user: { id: userId }
+            },
+            relations: ["user", "assignment"],
+            order: { submitted_at: "DESC" }
         });
     }
     async getSubmissionsByContest(contestId) {

@@ -8,6 +8,9 @@ export class Tag extends BaseEntity {
   @Column()
   name!: string;
 
+  @Column({ type: "text", nullable: true })
+  description!: string;
+
   @ManyToOne(() => User, (user) => user.tags)
   creator!: User;
 

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AssignmentService = void 0;
 const typeorm_1 = require("typeorm");
 const Assignment_1 = require("../entities/Assignment");
 const Course_1 = require("../entities/Course");
@@ -9,6 +8,8 @@ const data_source_1 = require("../data-source");
 const Question_1 = require("../entities/Question");
 const Tag_1 = require("../entities/Tag");
 const ChapterService_1 = require("./ChapterService");
+const Chapter_1 = require("../entities/Chapter");
+const typeorm_2 = require("typeorm");
 class AssignmentService {
     constructor() {
         this.assignmentRepository = data_source_1.AppDataSource.getRepository(Assignment_1.Assignment);
@@ -17,6 +18,7 @@ class AssignmentService {
         this.matrixRepository = data_source_1.AppDataSource.getRepository(Matrix_1.Matrix);
         this.tagRepository = data_source_1.AppDataSource.getRepository(Tag_1.Tag);
         this.chapterService = ChapterService_1.ChapterService.getInstance();
+        this.chapterRepository = data_source_1.AppDataSource.getRepository(Chapter_1.Chapter);
     }
     static getInstance() {
         if (!AssignmentService.instance) {
@@ -25,53 +27,60 @@ class AssignmentService {
         return AssignmentService.instance;
     }
     async createAssignment(courseId, body) {
-        console.log("Creating assignment with body:", body);
         if (!courseId) {
             throw new Error("Course ID is required");
         }
         if (!body.title || !body.description) {
             throw new Error("Title and description are required");
         }
-        if (!body.questionIds || body.questionIds.length === 0) {
-            throw new Error("At least one question is required");
-        }
-        if (!body.question_scores || Object.keys(body.question_scores).length === 0) {
-            throw new Error("Points for each question are required");
+        if (!body.questionIds || !body.question_scores) {
+            throw new Error("Question IDs and scores are required");
         }
         const course = await this.courseRepository.findOne({ where: { id: courseId } });
         if (!course) {
             throw new Error("Course not found");
         }
-        let questions = [];
-        if (body.questionIds && body.questionIds.length > 0) {
-            questions = await this.questionRepository.find({
-                where: { id: (0, typeorm_1.In)(body.questionIds) },
-            });
-            if (questions.length !== body.questionIds.length) {
-                throw new Error("Some questions not found");
-            }
+        // Validate that all questions exist
+        const questions = await this.questionRepository.findByIds(body.questionIds);
+        if (questions.length !== body.questionIds.length) {
+            throw new Error("One or more questions not found");
         }
-        // Validate question_scores
-        for (const questionId of body.questionIds) {
-            if (body.question_scores[questionId] === undefined ||
-                body.question_scores[questionId] <= 0) {
-                throw new Error(`Invalid or missing points for question ID ${questionId}`);
-            }
-        }
-        // Calculate total_points
-        const total_points = Object.values(body.question_scores).reduce((sum, points) => sum + points, 0);
+        // Calculate total points
+        const total_points = Object.values(body.question_scores).reduce((sum, score) => sum + score, 0);
         let order = body.order;
         if (body.chapterId) {
             // If chapterId is provided, get the next order from the chapter
-            order = await this.chapterService.getNextOrder(body.chapterId);
+            const chapter = await this.chapterRepository.findOne({
+                where: { id: body.chapterId },
+                relations: ["lessons", "assignments"],
+            });
+            if (!chapter) {
+                throw new Error("Chapter not found");
+            }
+            const lessonOrders = (chapter.lessons || []).map((l) => l.order || 0);
+            const assignmentOrders = (chapter.assignments || []).map((a) => a.order || 0);
+            order = Math.max(...lessonOrders, ...assignmentOrders, 0) + 1;
+        }
+        else {
+            // If no chapterId, get the next order from the course
+            const assignments = await this.assignmentRepository.find({
+                where: {
+                    course: { id: courseId },
+                    chapter: (0, typeorm_2.IsNull)()
+                },
+                order: { order: "DESC" },
+            });
+            order = assignments.length > 0 ? assignments[0].order + 1 : 1;
         }
         const assignment = this.assignmentRepository.create({
-            ...body,
-            course,
-            questions,
+            title: body.title,
+            description: body.description,
+            duration: body.duration,
+            questions: questions,
             questions_scores: body.question_scores,
             total_points,
-            order: order || 1,
+            order,
+            course: { id: courseId },
             chapter: body.chapterId ? { id: body.chapterId } : undefined,
         });
         return await this.assignmentRepository.save(assignment);
@@ -99,7 +108,7 @@ class AssignmentService {
                     message: `Invalid tag IDs in criterion: ${criterion.questionType}, ${criterion.difficulty_level}`,
                 };
             }
-            // Query questions that match questionType, difficulty_level, creator, and all specified tags
+            // Query questions that match questionType, difficulty_level, creator, and ALL specified tags
             const questions = await this.questionRepository
                 .createQueryBuilder("question")
                 .innerJoin("question.tags", "tag")
@@ -108,7 +117,7 @@ class AssignmentService {
                 .andWhere("question.creatorId = :creatorId", { creatorId: teacherId })
                 .andWhere("tag.id IN (:...tagIds)", { tagIds: criterion.tagIds })
                 .groupBy("question.id")
-                .having("COUNT(DISTINCT tag.id) >= :tagCount", { tagCount: criterion.tagIds.length })
+                .having("COUNT(DISTINCT tag.id) = :tagCount", { tagCount: criterion.tagIds.length })
                 .getMany();
             if (questions.length === 0) {
                 const tagNames = tags.map((tag) => tag.name).join(", ");
@@ -149,7 +158,7 @@ class AssignmentService {
             if (tags.length !== criterion.tagIds.length) {
                 throw new Error(`Invalid tag IDs in criterion: ${criterion.questionType}, ${criterion.difficulty_level}`);
             }
-            // Query questions that match questionType, difficulty_level, creator, and all specified tags
+            // Query questions that match questionType, difficulty_level, creator, and ALL specified tags
             const questions = await this.questionRepository
                 .createQueryBuilder("question")
                 .innerJoin("question.tags", "tag")
@@ -158,7 +167,7 @@ class AssignmentService {
                 .andWhere("question.creatorId = :creatorId", { creatorId: teacherId })
                 .andWhere("tag.id IN (:...tagIds)", { tagIds: criterion.tagIds })
                 .groupBy("question.id")
-                .having("COUNT(DISTINCT tag.id) >= :tagCount", { tagCount: criterion.tagIds.length })
+                .having("COUNT(DISTINCT tag.id) = :tagCount", { tagCount: criterion.tagIds.length })
                 .getMany();
             if (questions.length === 0) {
                 const tagNames = tags.map((tag) => tag.name).join(", ");
@@ -258,4 +267,4 @@ class AssignmentService {
         return { message: "Assignment deleted successfully" };
     }
 }
-exports.AssignmentService = AssignmentService;
+exports.default = AssignmentService;

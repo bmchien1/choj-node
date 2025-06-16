@@ -25,7 +25,13 @@ router.get("/", (0, isAuthenticated_1.default)(), async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        const [questions, total] = await questionService.getAllQuestionsPaginated(skip, limit);
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const difficulty = req.query.difficulty;
+        const type = req.query.type;
+        const tags = req.query.tags ? req.query.tags.split(',').map(Number) : undefined;
+        const [questions, total] = await questionService.getAllQuestionsPaginated(skip, limit, search, sortField, sortOrder, difficulty, type, tags);
         res.json({
             questions: questions.map((question) => ({
                 id: question.id,
@@ -60,7 +66,13 @@ router.get("/:creatorId", (0, isAuthenticated_1.default)(), async (req, res, nex
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        const [questions, total] = await questionService.getQuestionsByCreatorPaginated(creatorId, skip, limit);
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const difficulty = req.query.difficulty;
+        const type = req.query.type;
+        const tags = req.query.tags ? req.query.tags.split(',').map(Number) : undefined;
+        const [questions, total] = await questionService.getQuestionsByCreatorPaginated(creatorId, skip, limit, search, sortField, sortOrder, difficulty, type, tags);
         res.json({
             questions: questions.map((question) => ({
                 id: question.id,

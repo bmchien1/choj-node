@@ -1,12 +1,13 @@
 import { Router } from "express";
-import { TagService } from "../services/TagService";
+import TagService from "../services/TagService";
 import isAuthenticated from "../middleware/isAuthenticated";
 import { AppRole } from "../types";
 
 const router = Router();
 const tagService = TagService.getInstance();
 
-router.post("/", async (req, res, next) => {
+// Protected routes requiring authentication
+router.post("/", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
   try {
     const tag = await tagService.createTag(req.body);
     res.status(201).json(tag);
@@ -15,26 +16,72 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.get("/", async (req, res, next) => {
+router.get("/", isAuthenticated(), async (req, res, next) => {
   try {
-    const tags = await tagService.getAllTags();
-    res.json(tags);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search as string;
+    const sortField = req.query.sortField as string;
+    const sortOrder = req.query.sortOrder as 'ascend' | 'descend';
+
+    const [tags, total] = await tagService.getAllTagsPaginated(
+      skip,
+      limit,
+      {
+        search,
+        sortField,
+        sortOrder
+      }
+    );
+    res.json({
+      tags,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     next(err);
   }
 });
 
-router.get("/creator/:creatorId", async (req, res, next) => {
+router.get("/creator/:creatorId", isAuthenticated(), async (req, res, next) => {
   try {
-    const creatorId = parseInt(req.params.creatorId);
-    const tags = await tagService.getTagsByCreator(creatorId);
-    res.json(tags);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search as string;
+    const sortField = req.query.sortField as string;
+    const sortOrder = req.query.sortOrder as 'ascend' | 'descend';
+
+    const [tags, total] = await tagService.getTagsByCreatorPaginated(
+      parseInt(req.params.creatorId),
+      skip,
+      limit,
+      {
+        search,
+        sortField,
+        sortOrder
+      }
+    );
+    res.json({
+      tags,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     next(err);
   }
 });
 
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", isAuthenticated(), async (req, res, next) => {
   try {
     const tag = await tagService.getTagById(parseInt(req.params.id));
     res.json(tag);
@@ -43,7 +90,7 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
   try {
     const tag = await tagService.updateTag(parseInt(req.params.id), req.body);
     res.json(tag);
@@ -52,7 +99,7 @@ router.put("/:id", async (req, res, next) => {
   }
 });
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
   try {
     const result = await tagService.deleteTag(parseInt(req.params.id));
     res.json(result);

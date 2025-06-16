@@ -15,8 +15,21 @@ router.post("/:userId", async (req, res, next) => {
 });
 router.get("/:userId", async (req, res, next) => {
     try {
-        const matrices = await matrixService.getMatricesByUser(parseInt(req.params.userId));
-        res.json(matrices);
+        const userId = parseInt(req.params.userId);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const [matrices, total] = await matrixService.getMatricesByUserPaginated(userId, (page - 1) * limit, limit, search, sortField, sortOrder);
+        res.json({
+            matrices,
+            pagination: {
+                total,
+                page,
+                limit
+            }
+        });
     }
     catch (err) {
         next(err);
@@ -44,6 +57,28 @@ router.delete("/:matrixId", async (req, res, next) => {
     try {
         const result = await matrixService.deleteMatrix(parseInt(req.params.matrixId));
         res.json(result);
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// Get all matrices with pagination
+router.get("/", async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const [matrices, total] = await matrixService.getAllMatricesPaginated((page - 1) * limit, limit, search, sortField, sortOrder);
+        res.json({
+            matrices,
+            pagination: {
+                total,
+                page,
+                limit
+            }
+        });
     }
     catch (err) {
         next(err);

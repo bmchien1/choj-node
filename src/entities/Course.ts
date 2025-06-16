@@ -1,8 +1,6 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany, ManyToMany } from "typeorm";
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { BaseEntity } from "./BaseEntity";
 import { User } from "./User";
-import { Assignment } from "./Assignment";
-import { Lesson } from "./Lesson";
 import { Chapter } from "./Chapter";
 
 @Entity()
@@ -24,10 +22,4 @@ export class Course extends BaseEntity {
 
   @OneToMany(() => Chapter, (chapter) => chapter.course)
   chapters!: Chapter[];
-
-  @OneToMany(() => Assignment, (assignment) => assignment.course)
-  assignments!: Assignment[];
-
-  @OneToMany(() => Lesson, (lesson) => lesson.course)
-  lessons!: Lesson[];
 }

@@ -22,6 +22,10 @@ __decorate([
     __metadata("design:type", String)
 ], Tag.prototype, "name", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: "text", nullable: true }),
+    __metadata("design:type", String)
+], Tag.prototype, "description", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => User_1.User, (user) => user.tags),
     __metadata("design:type", User_1.User)
 ], Tag.prototype, "creator", void 0);

@@ -81,18 +81,27 @@ class ChapterService {
         await this.chapterRepository.remove(chapter);
         return { message: "Chapter deleted successfully" };
     }
+    async updateChapterOrder(chapterId, order) {
+        const chapter = await this.chapterRepository.findOne({ where: { id: chapterId } });
+        if (!chapter) {
+            throw new Error("Chapter not found");
+        }
+        chapter.order = order;
+        return await this.chapterRepository.save(chapter);
+    }
     async getNextOrder(chapterId) {
         const chapter = await this.chapterRepository.findOne({
             where: { id: chapterId },
-            relations: ["lessons", "assignments"],
+            relations: ["course"],
         });
         if (!chapter) {
             throw new Error("Chapter not found");
         }
-        const lessonOrders = chapter.lessons.map(lesson => lesson.order);
-        const assignmentOrders = chapter.assignments.map(assignment => assignment.order);
-        const allOrders = [...lessonOrders, ...assignmentOrders];
-        return allOrders.length > 0 ? Math.max(...allOrders) + 1 : 1;
+        const lastChapter = await this.chapterRepository.findOne({
+            where: { course: { id: chapter.course.id } },
+            order: { order: "DESC" },
+        });
+        return lastChapter ? lastChapter.order + 1 : 1;
     }
 }
 exports.ChapterService = ChapterService;

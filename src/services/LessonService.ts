@@ -3,6 +3,9 @@ import { Lesson, LessonType } from "../entities/Lesson";
 import { Course } from "../entities/Course";
 import { AppDataSource } from "../data-source";
 import { ChapterService } from "./ChapterService";
+import { Chapter } from "../entities/Chapter";
+import { Assignment } from "../entities/Assignment";
+import { IsNull } from "typeorm";
 
 interface LessonData {
   title: string;
@@ -19,12 +22,14 @@ class LessonService {
   private readonly lessonRepository: Repository<Lesson>;
   private readonly courseRepository: Repository<Course>;
   private readonly chapterService: ChapterService;
+  private readonly chapterRepository: Repository<Chapter>;
   private static instance: LessonService;
 
   constructor() {
     this.lessonRepository = AppDataSource.getRepository(Lesson);
     this.courseRepository = AppDataSource.getRepository(Course);
     this.chapterService = ChapterService.getInstance();
+    this.chapterRepository = AppDataSource.getRepository(Chapter);
   }
 
   public static getInstance(): LessonService {
@@ -62,14 +67,33 @@ class LessonService {
     let order = body.order;
     if (body.chapterId) {
       // If chapterId is provided, get the next order from the chapter
-      order = await this.chapterService.getNextOrder(body.chapterId);
+      const chapter = await this.chapterRepository.findOne({
+        where: { id: body.chapterId },
+        relations: ["lessons", "assignments"],
+      });
+      if (!chapter) {
+        throw new Error("Chapter not found");
+      }
+      const lessonOrders = (chapter.lessons || []).map((l: Lesson) => l.order || 0);
+      const assignmentOrders = (chapter.assignments || []).map((a: Assignment) => a.order || 0);
+      order = Math.max(...lessonOrders, ...assignmentOrders, 0) + 1;
+    } else {
+      // If no chapterId, get the next order from the course
+      const lessons = await this.lessonRepository.find({
+        where: { 
+          course: { id: courseId },
+          chapter: IsNull()
+        },
+        order: { order: "DESC" },
+      });
+      order = lessons.length > 0 ? lessons[0].order + 1 : 1;
     }
 
     const lesson = this.lessonRepository.create({
       title: body.title,
       description: body.description,
       file_url: body.file_url,
-      order: order || 1,
+      order: order,
       lessonType: body.lessonType,
       content: body.content,
       video_url: body.video_url,

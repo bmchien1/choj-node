@@ -6,7 +6,8 @@ import { AppRole } from "../types";
 const router = Router();
 const chapterService = ChapterService.getInstance();
 
-router.post("/:courseId", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
+// Protected routes requiring authentication
+router.post("/course/:courseId", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
   try {
     const chapter = await chapterService.createChapter(parseInt(req.params.courseId), req.body);
     res.status(201).json(chapter);
@@ -15,7 +16,7 @@ router.post("/:courseId", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), asy
   }
 });
 
-router.get("/:courseId", isAuthenticated(), async (req, res, next) => {
+router.get("/course/:courseId", isAuthenticated(), async (req, res, next) => {
   try {
     const chapters = await chapterService.getChaptersByCourse(parseInt(req.params.courseId));
     res.json(chapters);
@@ -24,28 +25,41 @@ router.get("/:courseId", isAuthenticated(), async (req, res, next) => {
   }
 });
 
-router.get("/single/:chapterId", isAuthenticated(), async (req, res, next) => {
+router.get("/:id", isAuthenticated(), async (req, res, next) => {
   try {
-    const chapter = await chapterService.getChapterById(parseInt(req.params.chapterId));
+    const chapter = await chapterService.getChapterById(parseInt(req.params.id));
     res.json(chapter);
   } catch (err) {
     next(err);
   }
 });
 
-router.put("/:chapterId", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
+router.put("/:id", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
   try {
-    const chapter = await chapterService.updateChapter(parseInt(req.params.chapterId), req.body);
+    const chapter = await chapterService.updateChapter(parseInt(req.params.id), req.body);
     res.json(chapter);
   } catch (err) {
     next(err);
   }
 });
 
-router.delete("/:chapterId", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
+router.delete("/:id", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
   try {
-    const result = await chapterService.deleteChapter(parseInt(req.params.chapterId));
+    const result = await chapterService.deleteChapter(parseInt(req.params.id));
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/:id/order", isAuthenticated([AppRole.TEACHER, AppRole.ADMIN]), async (req, res, next) => {
+  try {
+    const { order } = req.body;
+    if (typeof order !== 'number') {
+      throw new Error("Order must be a number");
+    }
+    const chapter = await chapterService.updateChapterOrder(parseInt(req.params.id), order);
+    res.json(chapter);
   } catch (err) {
     next(err);
   }

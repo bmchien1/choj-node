@@ -1,10 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const TagService_1 = require("../services/TagService");
+const TagService_1 = __importDefault(require("../services/TagService"));
+const isAuthenticated_1 = __importDefault(require("../middleware/isAuthenticated"));
+const types_1 = require("../types");
 const router = (0, express_1.Router)();
-const tagService = TagService_1.TagService.getInstance();
-router.post("/", async (req, res, next) => {
+const tagService = TagService_1.default.getInstance();
+// Protected routes requiring authentication
+router.post("/", (0, isAuthenticated_1.default)([types_1.AppRole.TEACHER, types_1.AppRole.ADMIN]), async (req, res, next) => {
     try {
         const tag = await tagService.createTag(req.body);
         res.status(201).json(tag);
@@ -13,26 +19,61 @@ router.post("/", async (req, res, next) => {
         next(err);
     }
 });
-router.get("/", async (req, res, next) => {
+router.get("/", (0, isAuthenticated_1.default)(), async (req, res, next) => {
     try {
-        const tags = await tagService.getAllTags();
-        res.json(tags);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const [tags, total] = await tagService.getAllTagsPaginated(skip, limit, {
+            search,
+            sortField,
+            sortOrder
+        });
+        res.json({
+            tags,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     }
     catch (err) {
         next(err);
     }
 });
-router.get("/creator/:creatorId", async (req, res, next) => {
+router.get("/creator/:creatorId", (0, isAuthenticated_1.default)(), async (req, res, next) => {
     try {
-        const creatorId = parseInt(req.params.creatorId);
-        const tags = await tagService.getTagsByCreator(creatorId);
-        res.json(tags);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const search = req.query.search;
+        const sortField = req.query.sortField;
+        const sortOrder = req.query.sortOrder;
+        const [tags, total] = await tagService.getTagsByCreatorPaginated(parseInt(req.params.creatorId), skip, limit, {
+            search,
+            sortField,
+            sortOrder
+        });
+        res.json({
+            tags,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     }
     catch (err) {
         next(err);
     }
 });
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", (0, isAuthenticated_1.default)(), async (req, res, next) => {
     try {
         const tag = await tagService.getTagById(parseInt(req.params.id));
         res.json(tag);
@@ -41,7 +82,7 @@ router.get("/:id", async (req, res, next) => {
         next(err);
     }
 });
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", (0, isAuthenticated_1.default)([types_1.AppRole.TEACHER, types_1.AppRole.ADMIN]), async (req, res, next) => {
     try {
         const tag = await tagService.updateTag(parseInt(req.params.id), req.body);
         res.json(tag);
@@ -50,7 +91,7 @@ router.put("/:id", async (req, res, next) => {
         next(err);
     }
 });
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", (0, isAuthenticated_1.default)([types_1.AppRole.TEACHER, types_1.AppRole.ADMIN]), async (req, res, next) => {
     try {
         const result = await tagService.deleteTag(parseInt(req.params.id));
         res.json(result);

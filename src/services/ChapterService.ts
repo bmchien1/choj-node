@@ -109,21 +109,31 @@ class ChapterService {
     return { message: "Chapter deleted successfully" };
   }
 
-  async getNextOrder(chapterId: number): Promise<number> {
-    const chapter = await this.chapterRepository.findOne({
-      where: { id: chapterId },
-      relations: ["lessons", "assignments"],
-    });
-
+  async updateChapterOrder(chapterId: number, order: number): Promise<Chapter> {
+    const chapter = await this.chapterRepository.findOne({ where: { id: chapterId } });
     if (!chapter) {
       throw new Error("Chapter not found");
     }
 
-    const lessonOrders = chapter.lessons.map(lesson => lesson.order);
-    const assignmentOrders = chapter.assignments.map(assignment => assignment.order);
-    const allOrders = [...lessonOrders, ...assignmentOrders];
+    chapter.order = order;
+    return await this.chapterRepository.save(chapter);
+  }
 
-    return allOrders.length > 0 ? Math.max(...allOrders) + 1 : 1;
+  async getNextOrder(chapterId: number): Promise<number> {
+    const chapter = await this.chapterRepository.findOne({
+      where: { id: chapterId },
+      relations: ["course"],
+    });
+    if (!chapter) {
+      throw new Error("Chapter not found");
+    }
+
+    const lastChapter = await this.chapterRepository.findOne({
+      where: { course: { id: chapter.course.id } },
+      order: { order: "DESC" },
+    });
+
+    return lastChapter ? lastChapter.order + 1 : 1;
   }
 }
 

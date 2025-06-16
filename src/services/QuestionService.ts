@@ -102,7 +102,6 @@ class QuestionService {
         input: tc.input,
         output: tc.output,
       })),
-      language: body.language,
       cpuTimeLimit: body.cpuTimeLimit,
       memoryLimit: body.memoryLimit,
       creator,
@@ -137,29 +136,100 @@ class QuestionService {
     return question;
   }
 
-  async getAllQuestionsPaginated(skip: number, take: number): Promise<[Question[], number]> {
-    return await this.questionRepository.findAndCount({
-      select: ['id', 'questionName', 'questionType', 'question', 'difficulty_level'],
-      relations: ['creator', 'tags', 'tags.creator'],
-      skip,
-      take,
-      relationLoadStrategy: 'query',
-    });
+  async getAllQuestionsPaginated(
+    skip: number, 
+    take: number,
+    search?: string,
+    sortField?: string,
+    sortOrder?: 'ascend' | 'descend',
+    difficulty?: string,
+    type?: string,
+    tags?: number[]
+  ): Promise<[Question[], number]> {
+    const queryBuilder = this.questionRepository.createQueryBuilder('question')
+      .leftJoinAndSelect('question.creator', 'creator')
+      .leftJoinAndSelect('question.tags', 'tags')
+      .leftJoinAndSelect('tags.creator', 'tagCreator');
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(question.questionName ILIKE :search OR question.question ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    if (difficulty) {
+      queryBuilder.andWhere('question.difficulty_level = :difficulty', { difficulty });
+    }
+
+    if (type) {
+      queryBuilder.andWhere('question.questionType = :type', { type });
+    }
+
+    if (tags && tags.length > 0) {
+      queryBuilder.andWhere('tags.id IN (:...tags)', { tags });
+    }
+
+    if (sortField) {
+      const order = sortOrder === 'descend' ? 'DESC' : 'ASC';
+      queryBuilder.orderBy(`question.${sortField}`, order);
+    }
+
+    return await queryBuilder
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
   }
 
-  async getQuestionsByCreatorPaginated(creatorId: number, skip: number, take: number): Promise<[Question[], number]> {
+  async getQuestionsByCreatorPaginated(
+    creatorId: number, 
+    skip: number, 
+    take: number,
+    search?: string,
+    sortField?: string,
+    sortOrder?: 'ascend' | 'descend',
+    difficulty?: string,
+    type?: string,
+    tags?: number[]
+  ): Promise<[Question[], number]> {
     if (!creatorId) {
       throw new Error("Creator ID is required");
     }
 
-    return await this.questionRepository.findAndCount({
-      where: { creator: { id: creatorId } },
-      select: ['id', 'questionName', 'questionType', 'question', 'difficulty_level'],
-      relations: ['creator', 'tags', 'tags.creator'],
-      skip,
-      take,
-      relationLoadStrategy: 'query',
-    });
+    const queryBuilder = this.questionRepository.createQueryBuilder('question')
+      .leftJoinAndSelect('question.creator', 'creator')
+      .leftJoinAndSelect('question.tags', 'tags')
+      .leftJoinAndSelect('tags.creator', 'tagCreator')
+      .where('creator.id = :creatorId', { creatorId });
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(question.questionName ILIKE :search OR question.question ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    if (difficulty) {
+      queryBuilder.andWhere('question.difficulty_level = :difficulty', { difficulty });
+    }
+
+    if (type) {
+      queryBuilder.andWhere('question.questionType = :type', { type });
+    }
+
+    if (tags && tags.length > 0) {
+      queryBuilder.andWhere('tags.id IN (:...tags)', { tags });
+    }
+
+    if (sortField) {
+      const order = sortOrder === 'descend' ? 'DESC' : 'ASC';
+      queryBuilder.orderBy(`question.${sortField}`, order);
+    }
+
+    return await queryBuilder
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
   }
 
   async updateQuestion(id: number, body: Partial<QuestionData>): Promise<Question> {
@@ -206,7 +276,6 @@ class QuestionService {
       correctAnswer: body.correctAnswer ?? question.correctAnswer,
       templateCode: body.templateCode ?? question.templateCode,
       testCases: body.testCases ?? question.testCases,
-      language: body.language ?? question.language,
       cpuTimeLimit: body.cpuTimeLimit ?? question.cpuTimeLimit,
       memoryLimit: body.memoryLimit ?? question.memoryLimit,
     });

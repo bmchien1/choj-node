@@ -67,6 +67,46 @@ class MatrixService {
             relations: ["user"],
         });
     }
+    async getAllMatrices() {
+        return await this.matrixRepository.find({
+            order: { createdAt: "ASC" },
+            relations: ["user"],
+        });
+    }
+    async getMatricesByUserPaginated(userId, skip, take, search, sortField, sortOrder) {
+        if (!userId) {
+            throw new Error("User ID is required");
+        }
+        const queryBuilder = this.matrixRepository.createQueryBuilder('matrix')
+            .leftJoinAndSelect('matrix.user', 'user')
+            .where('user.id = :userId', { userId });
+        if (search) {
+            queryBuilder.andWhere('(matrix.name ILIKE :search OR matrix.description ILIKE :search)', { search: `%${search}%` });
+        }
+        if (sortField) {
+            const order = sortOrder === 'descend' ? 'DESC' : 'ASC';
+            queryBuilder.orderBy(`matrix.${sortField}`, order);
+        }
+        return await queryBuilder
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
+    }
+    async getAllMatricesPaginated(skip, take, search, sortField, sortOrder) {
+        const queryBuilder = this.matrixRepository.createQueryBuilder('matrix')
+            .leftJoinAndSelect('matrix.user', 'user');
+        if (search) {
+            queryBuilder.andWhere('(matrix.name ILIKE :search OR matrix.description ILIKE :search)', { search: `%${search}%` });
+        }
+        if (sortField) {
+            const order = sortOrder === 'descend' ? 'DESC' : 'ASC';
+            queryBuilder.orderBy(`matrix.${sortField}`, order);
+        }
+        return await queryBuilder
+            .skip(skip)
+            .take(take)
+            .getManyAndCount();
+    }
     async getMatrixById(matrixId) {
         if (!matrixId) {
             throw new Error("Matrix ID is required");
