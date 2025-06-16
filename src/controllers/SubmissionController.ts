@@ -8,7 +8,7 @@ class SubmissionController {
     this.submissionService = SubmissionService.getInstance();
   }
 
-  public async handleEvaluationResult(req: Request, res: Response): Promise<void> {
+  public handleEvaluationResult = async (req: Request, res: Response): Promise<void> => {
     try {
       const { submissionId, questionId } = req.params;
       const { results, score, error } = req.body;
@@ -34,4 +34,6 @@ class SubmissionController {
   }
 }
 
-export default new SubmissionController(); 
+// Create a single instance and export it
+const submissionController = new SubmissionController();
+export default submissionController; 
