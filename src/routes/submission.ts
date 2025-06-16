@@ -1,6 +1,7 @@
 import { Router } from "express";
 import SubmissionService from "../services/SubmissionService";
 import isAuthenticated from "../middleware/isAuthenticated";
+import SubmissionController from "../controllers/SubmissionController";
 
 const router = Router();
 const submissionService = SubmissionService.getInstance();
@@ -35,6 +36,9 @@ router.post("/build", async (req, res, next) => {
     next(err);
   }
 });
+
+// Handle evaluation result callback
+router.post("/:submissionId/questions/:questionId/evaluation-result", SubmissionController.handleEvaluationResult);
 
 // Submit assignment
 router.post("/", async (req, res, next) => {
