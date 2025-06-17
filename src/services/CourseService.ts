@@ -32,7 +32,7 @@ class CourseService {
     this.userRepository = AppDataSource.getRepository(User);
     this.chapterRepository = AppDataSource.getRepository(Chapter);
   }
-
+//
   public static getInstance(): CourseService {
     if (!CourseService.instance) {
       CourseService.instance = new CourseService();

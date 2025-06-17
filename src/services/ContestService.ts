@@ -268,5 +268,5 @@ export default class ContestService {
         });
 
         return savedAttempt;
-    }
+    }//
 } 

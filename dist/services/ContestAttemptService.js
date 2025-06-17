@@ -107,6 +107,6 @@ class ContestAttemptService {
                 startTime: "DESC"
             }
         });
-    }
+    } //
 }
 exports.ContestAttemptService = ContestAttemptService;

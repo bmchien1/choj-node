@@ -4,7 +4,7 @@ import { initializeDatabase } from "./data-source";
 import InitDataService from "./services/InitDataService";
 import errorMiddleware from "./middleware/errorMiddleware";
 import responseMiddleware from "./middleware/responseMiddleware";
-import { chapterRoutes,authRoutes, courseRoutes, testRoutes, joinRoutes, submissionRoutes, userInCourseRoutes, questionRoutes, lessonRoutes, assignmentRoutes, matrixRoutes, tagRoutes, contestRoutes } from "./routes";
+import { chapterRoutes,authRoutes, courseRoutes, joinRoutes, submissionRoutes, userInCourseRoutes, questionRoutes, lessonRoutes, assignmentRoutes, matrixRoutes, tagRoutes, contestRoutes } from "./routes";
 
 const app = express();
 
@@ -25,7 +25,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/assignments", assignmentRoutes);
-app.use("/api/tests", testRoutes);
 app.use("/api/join", joinRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/user-in-course", userInCourseRoutes);

@@ -12,6 +12,7 @@ class CourseService {
         this.userRepository = data_source_1.AppDataSource.getRepository(User_1.User);
         this.chapterRepository = data_source_1.AppDataSource.getRepository(Chapter_1.Chapter);
     }
+    //
     static getInstance() {
         if (!CourseService.instance) {
             CourseService.instance = new CourseService();

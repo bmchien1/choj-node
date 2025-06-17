@@ -3,7 +3,6 @@ export { default as courseRoutes } from "./course";
 export { default as lessonRoutes } from "./lesson";
 export { default as assignmentRoutes } from "./assignment";
 
-export { default as testRoutes } from "./test";
 export { default as joinRoutes } from "./join";
 export { default as submissionRoutes } from "./submission";
 export { default as userInCourseRoutes } from "./userInCourse";

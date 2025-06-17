@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.contestRoutes = exports.chapterRoutes = exports.tagRoutes = exports.matrixRoutes = exports.questionRoutes = exports.userInCourseRoutes = exports.submissionRoutes = exports.joinRoutes = exports.testRoutes = exports.assignmentRoutes = exports.lessonRoutes = exports.courseRoutes = exports.authRoutes = void 0;
+exports.contestRoutes = exports.chapterRoutes = exports.tagRoutes = exports.matrixRoutes = exports.questionRoutes = exports.userInCourseRoutes = exports.submissionRoutes = exports.joinRoutes = exports.assignmentRoutes = exports.lessonRoutes = exports.courseRoutes = exports.authRoutes = void 0;
 var auth_1 = require("./auth");
 Object.defineProperty(exports, "authRoutes", { enumerable: true, get: function () { return __importDefault(auth_1).default; } });
 var course_1 = require("./course");
@@ -12,8 +12,6 @@ var lesson_1 = require("./lesson");
 Object.defineProperty(exports, "lessonRoutes", { enumerable: true, get: function () { return __importDefault(lesson_1).default; } });
 var assignment_1 = require("./assignment");
 Object.defineProperty(exports, "assignmentRoutes", { enumerable: true, get: function () { return __importDefault(assignment_1).default; } });
-var test_1 = require("./test");
-Object.defineProperty(exports, "testRoutes", { enumerable: true, get: function () { return __importDefault(test_1).default; } });
 var join_1 = require("./join");
 Object.defineProperty(exports, "joinRoutes", { enumerable: true, get: function () { return __importDefault(join_1).default; } });
 var submission_1 = require("./submission");

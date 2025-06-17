@@ -6,11 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Submission_1 = require("../entities/Submission");
 const data_source_1 = require("../data-source");
 const Question_1 = require("../entities/Question");
-const CompilerService_1 = __importDefault(require("./CompilerService"));
 const User_1 = require("../entities/User");
 const Assignment_1 = require("../entities/Assignment");
 const Contest_1 = require("../entities/Contest");
-const Course_1 = require("../entities/Course");
 const axios_1 = __importDefault(require("axios"));
 class SubmissionService {
     constructor() {
@@ -24,9 +22,7 @@ class SubmissionService {
         this.userRepository = data_source_1.AppDataSource.getRepository(User_1.User);
         this.assignmentRepository = data_source_1.AppDataSource.getRepository(Assignment_1.Assignment);
         this.contestRepository = data_source_1.AppDataSource.getRepository(Contest_1.Contest);
-        this.courseRepository = data_source_1.AppDataSource.getRepository(Course_1.Course);
-        this.compilerService = CompilerService_1.default.getInstance();
-        this.evaluationServiceUrl = process.env.EVALUATION_SERVICE_URL || "http://localhost:3001";
+        this.evaluationServiceUrl = process.env.EVALUATION_SERVICE_URL || "http://localhost:5001";
     }
     static getInstance() {
         if (!SubmissionService.instance) {
@@ -151,7 +147,7 @@ class SubmissionService {
                         });
                         continue;
                     }
-                    const callbackUrl = `${process.env.API_URL || "http://localhost:8080"}/api/submissions/${savedSubmission.id}/questions/${answer.questionId}/evaluation-result`;
+                    const callbackUrl = `${process.env.API_URL || "http://host.docker.internal:8080"}/api/submissions/${savedSubmission.id}/questions/${answer.questionId}/evaluation-result`;
                     codingAnswers.push({
                         sourceCode: answer.sourceCode,
                         language: answer.language || "python",
@@ -275,14 +271,35 @@ class SubmissionService {
                 timeLimit: 1000, // Default 1 second
                 cpuLimit: 100, // Default 100%
                 memoryLimit: 128 // Default 128MB
+            }, {
+                timeout: 25000 // 25 seconds timeout for evaluation service
             });
+            // Wait for evaluation service to process
+            let attempts = 0;
+            const maxAttempts = 10;
+            const waitTime = 1000; // 1 second
+            while (attempts < maxAttempts) {
+                if (response.data && (response.data.output !== undefined || response.data.error !== undefined)) {
+                    return {
+                        output: response.data.output || "",
+                        error: response.data.error || "",
+                    };
+                }
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                attempts++;
+            }
             return {
-                output: response.data.output || "",
-                error: response.data.error || "",
+                error: "Build timed out. Please try again."
             };
         }
         catch (err) {
-            return { error: err.message || "Failed to run code" };
+            console.error('Build code error:', err);
+            if (err.code === 'ECONNABORTED') {
+                return { error: "Build request timed out. Please try again." };
+            }
+            return {
+                error: err.response?.data?.message || err.message || "Failed to run code"
+            };
         }
     }
     async getSubmissionsByAssignment(assignmentId) {

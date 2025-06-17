@@ -206,6 +206,6 @@ class ContestService {
             submissionTime: savedAttempt.endTime
         });
         return savedAttempt;
-    }
+    } //
 }
 exports.default = ContestService;

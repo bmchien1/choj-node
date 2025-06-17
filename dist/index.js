@@ -25,7 +25,6 @@ app.use("/api/auth", routes_1.authRoutes);
 app.use("/api/courses", routes_1.courseRoutes);
 app.use("/api/lessons", routes_1.lessonRoutes);
 app.use("/api/assignments", routes_1.assignmentRoutes);
-app.use("/api/tests", routes_1.testRoutes);
 app.use("/api/join", routes_1.joinRoutes);
 app.use("/api/submissions", routes_1.submissionRoutes);
 app.use("/api/user-in-course", routes_1.userInCourseRoutes);

@@ -2,7 +2,6 @@ import { Repository } from "typeorm";
 import { Submission } from "../entities/Submission";
 import { AppDataSource } from "../data-source";
 import { Question } from "../entities/Question";
-import CompilerService from "./CompilerService";
 import { User } from "../entities/User";
 import { Assignment } from "../entities/Assignment";
 import { Contest } from "../entities/Contest";
@@ -47,8 +46,6 @@ class SubmissionService {
   private readonly userRepository: Repository<User>;
   private readonly assignmentRepository: Repository<Assignment>;
   private readonly contestRepository: Repository<Contest>;
-  private readonly courseRepository: Repository<Course>;
-  private readonly compilerService: CompilerService;
   private static instance: SubmissionService;
   private readonly evaluationServiceUrl: string;
 
@@ -58,9 +55,7 @@ class SubmissionService {
     this.userRepository = AppDataSource.getRepository(User);
     this.assignmentRepository = AppDataSource.getRepository(Assignment);
     this.contestRepository = AppDataSource.getRepository(Contest);
-    this.courseRepository = AppDataSource.getRepository(Course);
-    this.compilerService = CompilerService.getInstance();
-    this.evaluationServiceUrl = process.env.EVALUATION_SERVICE_URL || "http://localhost:3001";
+    this.evaluationServiceUrl = process.env.EVALUATION_SERVICE_URL || "http://localhost:5001";
   }
 
   public static getInstance(): SubmissionService {
@@ -211,7 +206,7 @@ class SubmissionService {
             continue;
           }
 
-          const callbackUrl = `${process.env.API_URL || "http://localhost:8080"}/api/submissions/${savedSubmission.id}/questions/${answer.questionId}/evaluation-result`;
+          const callbackUrl = `${process.env.API_URL || "http://host.docker.internal:8080"}/api/submissions/${savedSubmission.id}/questions/${answer.questionId}/evaluation-result`;
           codingAnswers.push({
             sourceCode: answer.sourceCode,
             language: answer.language || "python",

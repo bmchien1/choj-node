@@ -27,6 +27,6 @@ export class UserInCourseService {
       throw new Error("No courses found for this user");
     }
 
-    return userInCourses;
+    return userInCourses;//
   }
 }
