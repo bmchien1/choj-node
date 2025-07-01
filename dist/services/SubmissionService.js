@@ -363,5 +363,17 @@ class SubmissionService {
             relations: ["user", "course", "assignment", "contest"],
         });
     }
+    async getAllByCourseAndUser(courseId, userId) {
+        return await this.submissionRepository.find({
+            where: {
+                assignment: { course: { id: courseId } },
+                user: { id: userId }
+            },
+            relations: ["assignment", "user"]
+        });
+    }
+    async countSubmissions() {
+        return this.submissionRepository.count();
+    }
 }
 exports.default = SubmissionService;

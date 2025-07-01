@@ -49,7 +49,7 @@ __decorate([
     __metadata("design:type", Test_1.Test)
 ], Question.prototype, "tests", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => Assignment_1.Assignment, (assignment) => assignment.questions),
+    (0, typeorm_1.ManyToOne)(() => Assignment_1.Assignment, (assignment) => assignment.questions, { onDelete: "SET NULL", nullable: true }),
     __metadata("design:type", Assignment_1.Assignment)
 ], Question.prototype, "assignments", void 0);
 __decorate([

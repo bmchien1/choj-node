@@ -29,7 +29,7 @@ export class Question extends BaseEntity {
   @ManyToOne(() => Test, (test) => test.questions)
   tests?: Test;
 
-  @ManyToOne(() => Assignment, (assignment) => assignment.questions)
+  @ManyToOne(() => Assignment, (assignment) => assignment.questions, { onDelete: "SET NULL", nullable: true })
   assignments?: Assignment;
 
   @ManyToMany(() => Tag, (tag) => tag.questions)

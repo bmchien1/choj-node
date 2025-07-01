@@ -171,7 +171,14 @@ class ContestService {
                 .groupBy("question.id")
                 .having("COUNT(DISTINCT tag.id) >= :tagCount", { tagCount: criterion.tagIds.length })
                 .getMany();
-            for (const q of questions) {
+            // Check if we have enough questions for the required quantity
+            if (questions.length < criterion.quantity) {
+                throw new Error(`Not enough questions for criterion: ${criterion.questionType}, ${criterion.difficulty_level}. Required: ${criterion.quantity}, Available: ${questions.length}`);
+            }
+            // Shuffle questions and select the required quantity
+            const shuffledQuestions = questions.sort(() => Math.random() - 0.5);
+            const selectedQuestions = shuffledQuestions.slice(0, criterion.quantity);
+            for (const q of selectedQuestions) {
                 if (!existingIds.has(q.id)) {
                     if (!contest.questions)
                         contest.questions = [];
@@ -206,6 +213,35 @@ class ContestService {
             submissionTime: savedAttempt.endTime
         });
         return savedAttempt;
-    } //
+    }
+    async countContests() {
+        return this.contestRepository.count();
+    }
+    async getRecentContests(limit = 5) {
+        const contests = await this.contestRepository.find({
+            order: { createdAt: "DESC" },
+            take: limit,
+            relations: ["creator"]
+        });
+        const now = new Date();
+        return contests.map(contest => {
+            let status = "upcoming";
+            if (contest.startTime && contest.endTime) {
+                if (now < contest.startTime)
+                    status = "upcoming";
+                else if (now >= contest.startTime && now <= contest.endTime)
+                    status = "ongoing";
+                else
+                    status = "ended";
+            }
+            return {
+                id: contest.id,
+                contestName: contest.title,
+                status,
+                creator: contest.creator?.email || "",
+                description: contest.description
+            };
+        });
+    }
 }
 exports.default = ContestService;

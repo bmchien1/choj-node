@@ -62,6 +62,7 @@ const Chapter_1 = require("./entities/Chapter");
 const Contest_1 = require("./entities/Contest");
 const AssignmentAttempt_1 = require("./entities/AssignmentAttempt");
 const ContestAttempt_1 = require("./entities/ContestAttempt");
+const UserLesson_1 = require("./entities/UserLesson");
 dotenv.config();
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "postgres",
@@ -94,6 +95,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
         Contest_1.Contest,
         AssignmentAttempt_1.AssignmentAttempt,
         ContestAttempt_1.ContestAttempt,
+        UserLesson_1.UserLesson,
     ],
     migrations: ["src/migrations/*.ts"],
     subscribers: [],

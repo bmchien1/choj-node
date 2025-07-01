@@ -23,9 +23,9 @@ export class UserInCourseService {
       relations: ["user", "course"],
     });
 
-    if (!userInCourses.length) {
-      throw new Error("No courses found for this user");
-    }
+    // if (!userInCourses.length) {
+    //   throw new Error("No courses found for this user");
+    // }
 
     return userInCourses;//
   }

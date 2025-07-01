@@ -456,6 +456,20 @@ class SubmissionService {
       relations: ["user", "course", "assignment", "contest"],
     });
   }
+
+  async getAllByCourseAndUser(courseId: number, userId: number) {
+    return await this.submissionRepository.find({
+      where: {
+        assignment: { course: { id: courseId } },
+        user: { id: userId }
+      },
+      relations: ["assignment", "user"]
+    });
+  }
+
+  async countSubmissions(): Promise<number> {
+    return this.submissionRepository.count();
+  }
 }
 
 export default SubmissionService;

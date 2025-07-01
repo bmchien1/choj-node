@@ -173,10 +173,21 @@ class AssignmentService {
                 const tagNames = tags.map((tag) => tag.name).join(", ");
                 throw new Error(`No questions found for criterion: ${criterion.questionType}, ${criterion.difficulty_level}, Tags: ${tagNames}`);
             }
-            // Select one question randomly
-            const question = questions[Math.floor(Math.random() * questions.length)];
-            questionIds.push(question.id);
-            question_scores[question.id] = (criterion.percentage / 100) * total_points;
+            // Check if we have enough questions for the required quantity
+            if (questions.length < criterion.quantity) {
+                const tagNames = tags.map((tag) => tag.name).join(", ");
+                throw new Error(`Not enough questions for criterion: ${criterion.questionType}, ${criterion.difficulty_level}, Tags: ${tagNames}. Required: ${criterion.quantity}, Available: ${questions.length}`);
+            }
+            // Shuffle questions and select the required quantity
+            const shuffledQuestions = questions.sort(() => Math.random() - 0.5);
+            const selectedQuestions = shuffledQuestions.slice(0, criterion.quantity);
+            // Calculate points per question for this criterion
+            const pointsPerQuestion = (criterion.percentage / 100) * total_points / criterion.quantity;
+            // Add selected questions to the assignment
+            for (const question of selectedQuestions) {
+                questionIds.push(question.id);
+                question_scores[question.id] = pointsPerQuestion;
+            }
         }
         const questions = await this.questionRepository.find({
             where: { id: (0, typeorm_1.In)(questionIds) },

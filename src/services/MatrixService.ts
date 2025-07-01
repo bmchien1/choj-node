@@ -13,6 +13,7 @@ interface MatrixData {
     difficulty_level: string;
     tagIds: number[];
     percentage: number;
+    quantity: number;
   }[];
 }
 
@@ -59,6 +60,9 @@ class MatrixService {
       }
       if (criterion.percentage <= 0 || criterion.percentage > 100) {
         throw new Error("Percentage must be between 0 and 100");
+      }
+      if (!criterion.quantity || criterion.quantity <= 0) {
+        throw new Error("Quantity must be greater than 0");
       }
       // Validate tagIds exist
       const tags = await this.tagRepository.findBy({ id: In(criterion.tagIds) });
@@ -200,6 +204,9 @@ class MatrixService {
         }
         if (criterion.percentage <= 0 || criterion.percentage > 100) {
           throw new Error("Percentage must be between 0 and 100");
+        }
+        if (!criterion.quantity || criterion.quantity <= 0) {
+          throw new Error("Quantity must be greater than 0");
         }
         // Validate tagIds exist
         const tags = await this.tagRepository.findBy({ id: In(criterion.tagIds) });

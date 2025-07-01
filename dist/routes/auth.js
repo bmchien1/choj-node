@@ -26,6 +26,11 @@ router.post("/login", async (req, res, next) => {
         res.json(result);
     }
     catch (err) {
+        // Friendly error for user login
+        if (err.message === "User not found" ||
+            err.message === "Password is incorrect") {
+            return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
+        }
         next(err);
     }
 });

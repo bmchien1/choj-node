@@ -33,6 +33,8 @@ app.use("/api/matrix", routes_1.matrixRoutes);
 app.use("/api/tags", routes_1.tagRoutes);
 app.use("/api/chapters", routes_1.chapterRoutes);
 app.use("/api/contests", routes_1.contestRoutes);
+app.use("/api/user-lesson", routes_1.userLessonRoutes);
+app.use("/api/statistics", routes_1.statisticsRoutes);
 // Error handling middleware (must be last)
 app.use(errorMiddleware_1.default);
 // Initialize database and start server

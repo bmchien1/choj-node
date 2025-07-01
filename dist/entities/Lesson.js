@@ -28,7 +28,7 @@ __decorate([
     __metadata("design:type", Course_1.Course)
 ], Lesson.prototype, "course", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => Chapter_1.Chapter, (chapter) => chapter.lessons),
+    (0, typeorm_1.ManyToOne)(() => Chapter_1.Chapter, (chapter) => chapter.lessons, { onDelete: "CASCADE" }),
     (0, typeorm_1.JoinColumn)({ name: "chapter_id" }),
     __metadata("design:type", Chapter_1.Chapter)
 ], Lesson.prototype, "chapter", void 0);

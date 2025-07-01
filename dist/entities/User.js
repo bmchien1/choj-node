@@ -72,6 +72,14 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => Tag_1.Tag, (tag) => tag.creator),
     __metadata("design:type", Array)
 ], User.prototype, "tags", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: "int", default: 0 }),
+    __metadata("design:type", Number)
+], User.prototype, "totalScore", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: "int", default: 0 }),
+    __metadata("design:type", Number)
+], User.prototype, "totalSolved", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)()
 ], User);

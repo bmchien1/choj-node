@@ -41,6 +41,9 @@ class MatrixService {
             if (criterion.percentage <= 0 || criterion.percentage > 100) {
                 throw new Error("Percentage must be between 0 and 100");
             }
+            if (!criterion.quantity || criterion.quantity <= 0) {
+                throw new Error("Quantity must be greater than 0");
+            }
             // Validate tagIds exist
             const tags = await this.tagRepository.findBy({ id: (0, typeorm_1.In)(criterion.tagIds) });
             if (tags.length !== criterion.tagIds.length) {
@@ -141,6 +144,9 @@ class MatrixService {
                 }
                 if (criterion.percentage <= 0 || criterion.percentage > 100) {
                     throw new Error("Percentage must be between 0 and 100");
+                }
+                if (!criterion.quantity || criterion.quantity <= 0) {
+                    throw new Error("Quantity must be greater than 0");
                 }
                 // Validate tagIds exist
                 const tags = await this.tagRepository.findBy({ id: (0, typeorm_1.In)(criterion.tagIds) });

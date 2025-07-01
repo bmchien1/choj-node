@@ -6,7 +6,7 @@ import { Assignment } from "./Assignment";
 
 @Entity()
 export class Chapter extends BaseEntity {
-  @ManyToOne(() => Course)
+  @ManyToOne(() => Course, { onDelete: "CASCADE" })
   @JoinColumn({ name: "course_id" })
   course!: Course;
 
@@ -19,9 +19,9 @@ export class Chapter extends BaseEntity {
   @Column()
   order!: number;
 
-  @OneToMany(() => Lesson, (lesson) => lesson.chapter)
+  @OneToMany(() => Lesson, (lesson) => lesson.chapter, { cascade: true, onDelete: "CASCADE" })
   lessons!: Lesson[];
 
-  @OneToMany(() => Assignment, (assignment) => assignment.chapter)
+  @OneToMany(() => Assignment, (assignment) => assignment.chapter, { cascade: true, onDelete: "CASCADE" })
   assignments!: Assignment[];
 } 

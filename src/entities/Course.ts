@@ -20,6 +20,6 @@ export class Course extends BaseEntity {
   @Column({ default: "Toán" })
   subject!: string;
 
-  @OneToMany(() => Chapter, (chapter) => chapter.course)
+  @OneToMany(() => Chapter, (chapter) => chapter.course, { cascade: true, onDelete: "CASCADE" })
   chapters!: Chapter[];
 }

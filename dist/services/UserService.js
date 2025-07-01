@@ -151,5 +151,21 @@ class UserService {
     async getAll(query = {}) {
         return await this.userRepository.find();
     }
+    async countUsers() {
+        return this.userRepository.count();
+    }
+    async getTopUsers(limit = 10) {
+        const users = await this.userRepository.createQueryBuilder("user")
+            .orderBy("user.totalScore", "DESC")
+            .addOrderBy("user.totalSolved", "DESC")
+            .limit(limit)
+            .getMany();
+        return users.map(user => ({
+            id: user.id,
+            email: user.email,
+            totalScore: user.totalScore,
+            totalSolved: user.totalSolved,
+        }));
+    }
 }
 exports.UserService = UserService;

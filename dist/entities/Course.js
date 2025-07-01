@@ -38,7 +38,7 @@ __decorate([
     __metadata("design:type", String)
 ], Course.prototype, "subject", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => Chapter_1.Chapter, (chapter) => chapter.course),
+    (0, typeorm_1.OneToMany)(() => Chapter_1.Chapter, (chapter) => chapter.course, { cascade: true, onDelete: "CASCADE" }),
     __metadata("design:type", Array)
 ], Course.prototype, "chapters", void 0);
 exports.Course = Course = __decorate([

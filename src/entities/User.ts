@@ -42,6 +42,12 @@ export class User extends BaseEntity {
   @OneToMany(() => Tag, (tag) => tag.creator)
   tags?: Tag[];
 
+  @Column({ type: "int", default: 0 })
+  totalScore!: number;
+
+  @Column({ type: "int", default: 0 })
+  totalSolved!: number;
+
   toApiResponse() {
     return {
       id: this.id,

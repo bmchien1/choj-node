@@ -19,7 +19,7 @@ let Chapter = class Chapter extends BaseEntity_1.BaseEntity {
 };
 exports.Chapter = Chapter;
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => Course_1.Course),
+    (0, typeorm_1.ManyToOne)(() => Course_1.Course, { onDelete: "CASCADE" }),
     (0, typeorm_1.JoinColumn)({ name: "course_id" }),
     __metadata("design:type", Course_1.Course)
 ], Chapter.prototype, "course", void 0);
@@ -36,11 +36,11 @@ __decorate([
     __metadata("design:type", Number)
 ], Chapter.prototype, "order", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => Lesson_1.Lesson, (lesson) => lesson.chapter),
+    (0, typeorm_1.OneToMany)(() => Lesson_1.Lesson, (lesson) => lesson.chapter, { cascade: true, onDelete: "CASCADE" }),
     __metadata("design:type", Array)
 ], Chapter.prototype, "lessons", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => Assignment_1.Assignment, (assignment) => assignment.chapter),
+    (0, typeorm_1.OneToMany)(() => Assignment_1.Assignment, (assignment) => assignment.chapter, { cascade: true, onDelete: "CASCADE" }),
     __metadata("design:type", Array)
 ], Chapter.prototype, "assignments", void 0);
 exports.Chapter = Chapter = __decorate([

@@ -78,6 +78,19 @@ router.get("/assignment/:assignmentId/user/:userId", async (req, res, next) => {
         next(err);
     }
 });
+// Lấy tất cả submissions của user cho course
+router.get("/all-by-course-user", async (req, res, next) => {
+    try {
+        const { courseId, userId } = req.query;
+        // console.log(courseId);
+        // console.log(userId);
+        const result = await submissionService.getAllByCourseAndUser(Number(courseId), Number(userId));
+        res.json(result);
+    }
+    catch (err) {
+        next(err);
+    }
+});
 // Get submission by ID
 router.get("/:submissionId", async (req, res, next) => {
     try {

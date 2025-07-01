@@ -208,5 +208,25 @@ class QuestionService {
         await this.questionRepository.remove(question);
         return { message: "Question deleted successfully" };
     }
+    async countQuestions() {
+        return this.questionRepository.count();
+    }
+    async getRecentProblems(limit = 5) {
+        const problems = await this.questionRepository.find({
+            order: { createdAt: "DESC" },
+            take: limit,
+            relations: ["tags"]
+        });
+        return problems.map(problem => ({
+            id: problem.id,
+            problemName: problem.questionName,
+            problemCode: problem.id.toString(),
+            difficulty: problem.difficulty_level,
+            cpuTimeLimit: problem.cpuTimeLimit,
+            memoryLimit: problem.memoryLimit,
+            maxTimeCommit: 0,
+            tags: (problem.tags || []).map(tag => tag.name).join(",")
+        }));
+    }
 }
 exports.QuestionService = QuestionService;

@@ -11,3 +11,5 @@ export { default as matrixRoutes } from "./matrix";
 export { default as tagRoutes } from "./tag";
 export { default as chapterRoutes } from "./chapter";
 export { default as contestRoutes } from "./contest";
+export { default as userLessonRoutes } from "./userLesson";
+export { default as statisticsRoutes } from "./statistics";

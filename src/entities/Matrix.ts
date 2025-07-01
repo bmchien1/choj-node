@@ -18,6 +18,7 @@ export class Matrix extends BaseEntity {
     difficulty_level: string;
     tagIds: number[];
     percentage: number;
+    quantity: number;
   }[];
 
   @Column({ nullable: true })

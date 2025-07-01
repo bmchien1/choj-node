@@ -10,7 +10,7 @@ export class Assignment extends BaseEntity {
   @JoinColumn({ name: "course_id" })
   course!: Course;
 
-  @ManyToOne(() => Chapter, (chapter) => chapter.assignments)
+  @ManyToOne(() => Chapter, (chapter) => chapter.assignments, { onDelete: "CASCADE" })
   @JoinColumn({ name: "chapter_id" })
   chapter!: Chapter;
 
