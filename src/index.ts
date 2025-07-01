@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json()); // Parse JSON bodies
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000", // Allow your frontend origin
+    origin: '*', // Allow your frontend origin
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed methods
     allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
     credentials: true, // Support cookies/auth headers if needed
