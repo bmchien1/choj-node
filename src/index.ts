@@ -21,6 +21,9 @@ app.use(
 app.use(responseMiddleware);
 
 // Routes (prefixed with /api for consistency)
+app.use("/api/test", async (req, res, next) => {
+  res.status(201).json({});
+})
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/lessons", lessonRoutes);

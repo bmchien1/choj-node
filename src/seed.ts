@@ -61,7 +61,7 @@ async function seed() {
     q.templateCode = undefined;
     q.cpuTimeLimit = randomInt(1, 5);
     q.memoryLimit = randomInt(32, 256);
-    q.testCases = [{input: "1", output: "1"}, {input: "2", output: "4"}];
+    q.testCases = [{input: "1", expectedOutput: "1"}, {input: "2", expectedOutput: "4"}];
     q.correctAnswer = "42";
     q.choices = ["A", "B", "C", "D"];
     q.maxPoint = randomInt(1, 10);

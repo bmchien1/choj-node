@@ -210,10 +210,10 @@ class SubmissionService {
           codingAnswers.push({
             sourceCode: answer.sourceCode,
             language: answer.language || "python",
-            testCases,
-            timeLimit: question.cpuTimeLimit || 1000,
-            cpuLimit: 100,
-            memoryLimit: question.memoryLimit || 128,
+            testCases: question.testCases || [],
+            timeLimit: 1000,
+            cpuLimit: 1000,
+            memoryLimit: 128,
             callbackUrl
           });
         }
@@ -226,6 +226,7 @@ class SubmissionService {
       if (codingAnswers.length > 0) {
         // Send coding answers to evaluation service
         console.log('Sending coding answers to evaluation service...');
+        console.log(codingAnswers);
         await this.sendToEvaluationService(codingAnswers);
         
         // Update status to evaluating
@@ -351,7 +352,7 @@ class SubmissionService {
         sourceCode,
         input,
         timeLimit: 1000, // Default 1 second
-        cpuLimit: 100, // Default 100%
+        cpuLimit: 1000, // Default 100%
         memoryLimit: 128 // Default 128MB
       }, {
         timeout: 25000 // 25 seconds timeout for evaluation service

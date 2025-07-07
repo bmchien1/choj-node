@@ -46,7 +46,7 @@ export class Question extends BaseEntity {
   memoryLimit?: number;
 
   @Column("json", { nullable: true })
-  testCases?: { input: string; output: string }[];
+  testCases?: { input: string; expectedOutput: string }[]; 
 
   @Column({ nullable: true })
   correctAnswer?: string;

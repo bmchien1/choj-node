@@ -98,9 +98,9 @@ class QuestionService {
       choices: body.choices,
       correctAnswer: body.correctAnswer?.toString(),
       templateCode: body.templateCode,
-      testCases: body.testCases?.map((tc: { input: any; output: any; }) => ({
+      testCases: body.testCases?.map((tc: any) => ({
         input: tc.input,
-        output: tc.output,
+        expectedOutput: tc.expectedOutput ?? tc.output, 
       })),
       cpuTimeLimit: body.cpuTimeLimit,
       memoryLimit: body.memoryLimit,
